@@ -1,7 +1,7 @@
 /* @flow */
 
 import { namespaceMap } from 'web/util/index'
-import { isValidNodeType, createNode, Scene } from 'spritejs'
+import { isValidNodeType, createNode, Scene, Label, BaseNode } from 'spritejs'
 
 export function createElement (tagName: string, vnode: VNode): Element {
   if (isValidNodeType(tagName)) {
@@ -10,6 +10,7 @@ export function createElement (tagName: string, vnode: VNode): Element {
       const elm = document.createElement('div')
       elm.id = attrs.id
       const scene = createNode(tagName, elm, attrs)
+      elm.scene = scene
       return scene
     }
     return createNode(tagName, attrs)
@@ -46,12 +47,18 @@ export function removeChild (node: Node, child: Node) {
 }
 
 export function appendChild (node: Node, child: Node) {
-  console.log(node.tagName)
   if (child instanceof Scene) {
     node.appendChild(child.container)
     setTimeout(() => {
       child.updateViewport()
     })
+  } else if (node instanceof BaseNode) {
+    if (node instanceof Label && child.nodeType === document.TEXT_NODE) {
+      node.text = child.textContent
+    }
+    if (child instanceof BaseNode) {
+      node.appendChild(child)
+    }
   } else {
     node.appendChild(child)
   }

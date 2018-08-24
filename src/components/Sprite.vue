@@ -1,7 +1,11 @@
 <template>
-  <scene id="container" :resolution="[600, 600]" :viewport="[300, 300]">
+  <scene id="container" :resolution="[1200, 1200]" :viewport="[600, 600]">
     <layer id="fglayer">
       <sprite :pos="[100, 100]" :bgcolor="bgcolor" :size="[100, 100]"></sprite>
+      <label :pos="[300, 100]" :width="300" font="24px '宋体'" lineBreak="normal">
+        Hello Sprite,Hello Sprite,Hello Sprite,Hello Sprite,Hello Sprite,Hello Sprite
+        Hello Sprite,Hello Sprite,Hello Sprite,Hello Sprite,Hello Sprite,Hello Sprite
+      </label>
     </layer>
   </scene>
 </template>
