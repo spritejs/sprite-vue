@@ -5,7 +5,10 @@ import { isValidNodeType, createNode, Scene, Label, BaseNode } from 'spritejs'
 
 export function createElement (tagName: string, vnode: VNode): Element {
   if (isValidNodeType(tagName)) {
-    const attrs = vnode.data.attrs
+    let attrs = {}
+    if (vnode.data && vnode.data.attrs) {
+      attrs = vnode.data.attrs
+    }
     if (tagName === 'scene') {
       const elm = document.createElement('div')
       elm.id = attrs.id
@@ -35,11 +38,38 @@ export function createTextNode (text: string): Text {
 }
 
 export function createComment (text: string): Comment {
-  return document.createComment(text)
+  // return createNode('data', { text })
+  const comment = document.createComment(text)
+  comment.connect = (parent, zOrder) => {
+    comment.parent = parent
+    comment.zOrder = zOrder
+  }
+  comment.disconnect = (parent) => {
+    delete comment.parent
+    delete comment.zOrder
+  }
+  comment.dispatchEvent = () => false
+  comment.forceUpdate = () => false
+  comment.isVisible = () => false
+  return comment
 }
 
 export function insertBefore (parentNode: Node, newNode: Node, referenceNode: Node) {
-  parentNode.insertBefore(newNode, referenceNode)
+  if (parentNode instanceof BaseNode) {
+    if (parentNode instanceof Label && newNode.nodeType === document.TEXT_NODE) {
+      parentNode.text = newNode.textContent
+      // parentNode.childNodes = [newNode]
+    }
+    if (newNode.nodeType === document.COMMENT_NODE) {
+      // newNode = createNode('data', { text: newNode.textContent })
+      parentNode.insertBefore(newNode, referenceNode)
+    }
+    if (newNode instanceof BaseNode) {
+      parentNode.insertBefore(newNode, referenceNode)
+    }
+  } else {
+    parentNode.insertBefore(newNode, referenceNode)
+  }
 }
 
 export function removeChild (node: Node, child: Node) {
@@ -55,7 +85,11 @@ export function appendChild (node: Node, child: Node) {
   } else if (node instanceof BaseNode) {
     if (node instanceof Label && child.nodeType === document.TEXT_NODE) {
       node.text = child.textContent
+      // node.childNodes = [child]
     }
+    // if (child.nodeType === document.COMMENT_NODE) {
+    //   child = createNode('data', { text: child.textContent })
+    // }
     if (child instanceof BaseNode) {
       node.appendChild(child)
     }
@@ -65,7 +99,7 @@ export function appendChild (node: Node, child: Node) {
 }
 
 export function parentNode (node: Node): ?Node {
-  return node.parentNode
+  return node.parentNode || node.parent
 }
 
 export function nextSibling (node: Node): ?Node {

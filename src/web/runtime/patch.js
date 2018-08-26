@@ -1,7 +1,8 @@
 /* @flow */
 
 import * as nodeOps from 'web/runtime/node-ops'
-import { createPatchFunction } from 'core/vdom/patch'
+// import { createPatchFunction } from 'core/vdom/patch'
+import { createPatchFunction } from './patch-fix'
 import baseModules from 'core/vdom/modules/index'
 import platformModules from 'web/runtime/modules/index'
 

@@ -11,7 +11,7 @@
     "build": "node build/build.js"
   },
   "dependencies": {
-    "spritejs": "^2.8.5",
+    "spritejs": "^2.9.0",
     "vue": "^2.5.2",
     "vue-router": "^3.0.1"
   },
