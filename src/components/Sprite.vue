@@ -28,6 +28,7 @@ export default {
   methods: {
     onClick(evt) {
       console.log(evt);
+      this.toggle = !this.toggle;
     },
     onMouseEnter() {
       console.log('mouseenter');

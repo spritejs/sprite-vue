@@ -47,6 +47,7 @@ module.exports = {
       server: 'vue/src/server',
       sfc: 'vue/src/sfc',
       '@': resolve('src'),
+      'spritejs': 'spritejs/dist/spritejs.js',
     },
   },
   module: {
