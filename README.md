@@ -1,21 +1,21 @@
 # sprite-vue
 
-> A Vue.js project for SpriteJS
+> Vue.js 支持 SpriteJS 的 Runtime
 
-## Build Setup
+## 使用
 
-``` bash
-# install dependencies
-npm install
+用 vue-cli 创建项目，将对应的 vue 模块替换成 sprite-vue 模块，在使用方式上稍作修改：
 
-# serve with hot reload at localhost:8080
-npm run dev
-
-# build for production with minification
-npm run build
-
-# build for production and view the bundle analyzer report
-npm run build --report
+```js
+import Vue from 'vue';
 ```
 
-For a detailed explanation on how things work, check out the [guide](http://vuejs-templates.github.io/webpack/) and [docs for vue-loader](http://vuejs.github.io/vue-loader).
+修改为
+
+```js
+import { Vue, spritejs } from 'sprite-vue'
+```
+
+Enjoy~
+
+例子： https://github.com/spritejs/sprite-vue-demo
