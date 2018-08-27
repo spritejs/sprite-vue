@@ -9,19 +9,26 @@ function locateNode (vnode: VNode): VNodeWithData {
     : vnode
 }
 
+function getStyle (el) {
+  if (el.style) return el.style
+  if (el.container && el.container.style) return el.container.style
+  return el.attributes
+}
+
 export default {
   bind (el: any, { value }: VNodeDirective, vnode: VNodeWithData) {
     vnode = locateNode(vnode)
     const transition = vnode.data && vnode.data.transition
+    const style = getStyle(el)
     const originalDisplay = el.__vOriginalDisplay =
-      el.style.display === 'none' ? '' : el.style.display
+      style.display === 'none' ? '' : style.display
     if (value && transition) {
       vnode.data.show = true
       enter(vnode, () => {
-        el.style.display = originalDisplay
+        style.display = originalDisplay
       })
     } else {
-      el.style.display = value ? originalDisplay : 'none'
+      style.display = value ? originalDisplay : 'none'
     }
   },
 
@@ -30,19 +37,21 @@ export default {
     if (!value === !oldValue) return
     vnode = locateNode(vnode)
     const transition = vnode.data && vnode.data.transition
+    const style = getStyle(el)
+    console.log(el)
     if (transition) {
       vnode.data.show = true
       if (value) {
         enter(vnode, () => {
-          el.style.display = el.__vOriginalDisplay
+          style.display = el.__vOriginalDisplay
         })
       } else {
         leave(vnode, () => {
-          el.style.display = 'none'
+          style.display = 'none'
         })
       }
     } else {
-      el.style.display = value ? el.__vOriginalDisplay : 'none'
+      style.display = value ? el.__vOriginalDisplay : 'none'
     }
   },
 
@@ -54,7 +63,8 @@ export default {
     isDestroy: boolean
   ) {
     if (!isDestroy) {
-      el.style.display = el.__vOriginalDisplay
+      const style = getStyle(el)
+      style.display = el.__vOriginalDisplay
     }
   }
 }

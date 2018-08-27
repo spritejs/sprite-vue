@@ -38,7 +38,6 @@ export function createTextNode (text: string): Text {
 }
 
 export function createComment (text: string): Comment {
-  // return createNode('data', { text })
   const comment = document.createComment(text)
   comment.connect = (parent, zOrder) => {
     comment.parent = parent
@@ -60,11 +59,7 @@ export function insertBefore (parentNode: Node, newNode: Node, referenceNode: No
       parentNode.text = newNode.textContent
       // parentNode.childNodes = [newNode]
     }
-    if (newNode.nodeType === document.COMMENT_NODE) {
-      // newNode = createNode('data', { text: newNode.textContent })
-      parentNode.insertBefore(newNode, referenceNode)
-    }
-    if (newNode instanceof BaseNode) {
+    if (newNode instanceof BaseNode || newNode.nodeType === document.COMMENT_NODE) {
       parentNode.insertBefore(newNode, referenceNode)
     }
   } else {
@@ -73,12 +68,17 @@ export function insertBefore (parentNode: Node, newNode: Node, referenceNode: No
 }
 
 export function removeChild (node: Node, child: Node) {
-  node.removeChild(child)
+  if (child instanceof Scene) {
+    node.removeChild(child.container)
+  } else {
+    node.removeChild(child)
+  }
 }
 
 export function appendChild (node: Node, child: Node) {
   if (child instanceof Scene) {
     node.appendChild(child.container)
+    child.parent = node
     setTimeout(() => {
       child.updateViewport()
     })
@@ -87,10 +87,7 @@ export function appendChild (node: Node, child: Node) {
       node.text = child.textContent
       // node.childNodes = [child]
     }
-    // if (child.nodeType === document.COMMENT_NODE) {
-    //   child = createNode('data', { text: child.textContent })
-    // }
-    if (child instanceof BaseNode) {
+    if (child instanceof BaseNode || child.nodeType === document.COMMENT_NODE) {
       node.appendChild(child)
     }
   } else {
@@ -103,6 +100,13 @@ export function parentNode (node: Node): ?Node {
 }
 
 export function nextSibling (node: Node): ?Node {
+  if (node instanceof BaseNode) {
+    if (node.parent) {
+      const idx = node.parent.indexOf(node)
+      return node.parent[idx + 1]
+    }
+    return null
+  }
   return node.nextSibling
 }
 
@@ -111,7 +115,11 @@ export function tagName (node: Element): string {
 }
 
 export function setTextContent (node: Node, text: string) {
-  node.textContent = text
+  if (node instanceof Label) {
+    node.text = text
+  } else {
+    node.textContent = text
+  }
 }
 
 export function setStyleScope (node: Element, scopeId: string) {
