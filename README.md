@@ -2,9 +2,38 @@
 
 > Vue.js 支持 SpriteJS 的 Runtime
 
-## 使用
+## 直接使用
 
-用 vue-cli 创建项目，将对应的 vue 模块替换成 sprite-vue 模块，在使用方式上稍作修改：
+[例子](https://code.h5jun.com/najo/edit?js,output)
+
+```html
+<script src="https://s4.ssl.qhres.com/!a9256501/sprite-vue.min.js"></script>
+<div id="app"></div>
+<script>
+const { Vue } = spritevue;
+
+new Vue({
+  el: '#app',
+  data() {
+    return {
+      viewport: [600, 600],
+    }
+  },
+  template: `<div>
+  <scene id="container" :viewport=viewport>
+    <layer id="fglayer">
+      <sprite :pos="[100, 100]" :size="[50, 50]"
+        bgcolor="red"></sprite>
+    </layer>
+  </scene>
+</div>`,
+});
+</script>
+```
+
+## 项目里安装和使用
+
+用 vue-cli 创建任意项目，将对应的 vue 模块替换成 sprite-vue 模块，在使用方式上稍作修改：
 
 ```js
 import Vue from 'vue';
