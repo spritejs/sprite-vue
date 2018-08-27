@@ -3,6 +3,7 @@ const path = require('path')
 const utils = require('./utils')
 const config = require('../config')
 const vueLoaderConfig = require('./vue-loader.conf')
+const alias = require('./alias')
 
 function resolve (dir) {
   return path.join(__dirname, '..', dir)
@@ -35,20 +36,7 @@ module.exports = {
   },
   resolve: {
     extensions: ['.js', '.vue', '.json'],
-    alias: {
-      // 'vue$': 'vue/dist/vue.esm.js',
-      'vue$': path.resolve(__dirname, '../src/web/entry-runtime-with-compiler'),
-      compiler: 'vue/src/compiler',
-      core: 'vue/src/core',
-      shared: 'vue/src/shared',
-      web: path.resolve(__dirname, '../src/web'),
-      weex: 'vue/src/platforms/weex',
-      mp: 'vue/src/platforms/mp',
-      server: 'vue/src/server',
-      sfc: 'vue/src/sfc',
-      '@': resolve('src'),
-      'spritejs': 'spritejs/dist/spritejs.js',
-    },
+    alias,
   },
   module: {
     rules: [
