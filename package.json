@@ -1,9 +1,10 @@
 {
   "name": "sprite-vue",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A Vue.js project for SpriteJS",
   "author": "akira-cn <akira.cn@gmail.com>",
   "main": "src/index.js",
+  "module": "dist/sprite-vue.es6.js",
   "scripts": {
     "dev": "webpack-dev-server --inline --progress --config build/webpack.dev.conf.js",
     "start": "npm run dev",
