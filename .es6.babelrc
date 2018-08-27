@@ -1,0 +1,6 @@
+{
+  "presets": [
+    "flow-vue"
+  ],
+  "plugins": ["transform-decorators-runtime"]
+}

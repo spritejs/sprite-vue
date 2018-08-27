@@ -1,41 +1,42 @@
-'use strict'
-require('./check-versions')()
+#!/usr/bin/env node
 
-process.env.NODE_ENV = 'production'
-
-const ora = require('ora')
-const rm = require('rimraf')
-const path = require('path')
-const chalk = require('chalk')
 const webpack = require('webpack')
-const config = require('../config')
-const webpackConfig = require('./webpack.prod.conf')
+const fs = require('fs')
+const path = require('path')
 
-const spinner = ora('building for production...')
-spinner.start()
+const webpackConf = require('../webpack.config.js')
 
-rm(path.join(config.build.assetsRoot, config.build.assetsSubDirectory), err => {
-  if (err) throw err
-  webpack(webpackConfig, (err, stats) => {
-    spinner.stop()
-    if (err) throw err
-    process.stdout.write(stats.toString({
-      colors: true,
-      modules: false,
-      children: false, // If you are using ts-loader, setting this to true will make TypeScript errors show up during build.
-      chunks: false,
-      chunkModules: false
-    }) + '\n\n')
-
-    if (stats.hasErrors()) {
-      console.log(chalk.red('  Build failed with errors.\n'))
-      process.exit(1)
-    }
-
-    console.log(chalk.cyan('  Build complete.\n'))
-    console.log(chalk.yellow(
-      '  Tip: built files are meant to be served over an HTTP server.\n' +
-      '  Opening index.html over file:// won\'t work.\n'
-    ))
+function buildTask(options = {}) {
+  return new Promise((resolve, reject) => {
+    webpack(webpackConf(options), (err, status) => {
+      if(err) reject(err)
+      else {
+        resolve(status)
+      }
+    })
   })
-})
+}
+
+function uploadToCDN(stats) {
+  const cdnUploader = require('./cdn-uploader'),
+    output = stats.compilation.compiler.options.output,
+    file = path.resolve(output.path, output.filename)
+
+  console.log('uploading file: %s', file)
+
+  return cdnUploader.upload(file).then((res) => {
+    console.log('file uploaded, CDN URL: %s', res[file])
+    const readmeFile = path.resolve(__dirname, '..', 'README.md')
+    let content = fs.readFileSync(readmeFile, 'utf-8')
+    content = content.replace(/script src="(.*)"/igm, `script src="${res[file]}"`)
+    fs.writeFileSync(readmeFile, content)
+  })
+}
+
+(async function () {
+  await buildTask() // build uncompressed file
+  await buildTask({esnext: true})
+  await buildTask({esnext: true, production: true})
+  const stats = await buildTask({production: true}) // build compressed file
+  await uploadToCDN(stats)
+}())
