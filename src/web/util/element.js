@@ -60,6 +60,9 @@ export function isUnknownElement (tag: string): boolean {
   if (isValidNodeType(tag)) {
     return false
   }
+  if (tag.startsWith('s-') && isValidNodeType(tag.slice(2))) {
+    return false
+  }
   if (isReservedTag(tag)) {
     return false
   }

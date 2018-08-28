@@ -4,7 +4,12 @@ import { namespaceMap } from 'web/util/index'
 import { isValidNodeType, createNode, Scene, Label, BaseNode } from 'spritejs'
 
 export function createElement (tagName: string, vnode: VNode): Element {
-  if (isValidNodeType(tagName)) {
+  let isSpriteNode = tagName.toLowerCase() !== 'label' && isValidNodeType(tagName)
+  if (tagName.startsWith('s-')) {
+    tagName = tagName.slice(2)
+    isSpriteNode = isValidNodeType(tagName)
+  }
+  if (isSpriteNode) {
     let attrs = {}
     if (vnode.data && vnode.data.attrs) {
       attrs = vnode.data.attrs

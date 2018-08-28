@@ -6641,6 +6641,9 @@ function isUnknownElement(tag) {
   if (Object(spritejs__WEBPACK_IMPORTED_MODULE_2__["isValidNodeType"])(tag)) {
     return false;
   }
+  if (tag.startsWith('s-') && Object(spritejs__WEBPACK_IMPORTED_MODULE_2__["isValidNodeType"])(tag.slice(2))) {
+    return false;
+  }
   if (isReservedTag(tag)) {
     return false;
   }
@@ -12873,7 +12876,7 @@ cs.get = function (string) {
 		return null;
 	}
 
-	return { model: model, value: val };
+	return {model: model, value: val};
 };
 
 cs.get.rgb = function (string) {
@@ -12903,7 +12906,7 @@ cs.get.rgb = function (string) {
 		}
 
 		if (hexAlpha) {
-			rgb[3] = Math.round(parseInt(hexAlpha, 16) / 255 * 100) / 100;
+			rgb[3] = Math.round((parseInt(hexAlpha, 16) / 255) * 100) / 100;
 		}
 	} else if (match = string.match(abbr)) {
 		match = match[1];
@@ -12914,7 +12917,7 @@ cs.get.rgb = function (string) {
 		}
 
 		if (hexAlpha) {
-			rgb[3] = Math.round(parseInt(hexAlpha + hexAlpha, 16) / 255 * 100) / 100;
+			rgb[3] = Math.round((parseInt(hexAlpha + hexAlpha, 16) / 255) * 100) / 100;
 		}
 	} else if (match = string.match(rgba)) {
 		for (i = 0; i < 3; i++) {
@@ -12989,7 +12992,7 @@ cs.get.hwb = function (string) {
 
 	if (match) {
 		var alpha = parseFloat(match[4]);
-		var h = (parseFloat(match[1]) % 360 + 360) % 360;
+		var h = ((parseFloat(match[1]) % 360) + 360) % 360;
 		var w = clamp(parseFloat(match[2]), 0, 100);
 		var b = clamp(parseFloat(match[3]), 0, 100);
 		var a = clamp(isNaN(alpha) ? 1 : alpha, 0, 1);
@@ -13002,13 +13005,23 @@ cs.get.hwb = function (string) {
 cs.to.hex = function () {
 	var rgba = swizzle(arguments);
 
-	return '#' + hexDouble(rgba[0]) + hexDouble(rgba[1]) + hexDouble(rgba[2]) + (rgba[3] < 1 ? hexDouble(Math.round(rgba[3] * 255)) : '');
+	return (
+		'#' +
+		hexDouble(rgba[0]) +
+		hexDouble(rgba[1]) +
+		hexDouble(rgba[2]) +
+		(rgba[3] < 1
+			? (hexDouble(Math.round(rgba[3] * 255)))
+			: '')
+	);
 };
 
 cs.to.rgb = function () {
 	var rgba = swizzle(arguments);
 
-	return rgba.length < 4 || rgba[3] === 1 ? 'rgb(' + Math.round(rgba[0]) + ', ' + Math.round(rgba[1]) + ', ' + Math.round(rgba[2]) + ')' : 'rgba(' + Math.round(rgba[0]) + ', ' + Math.round(rgba[1]) + ', ' + Math.round(rgba[2]) + ', ' + rgba[3] + ')';
+	return rgba.length < 4 || rgba[3] === 1
+		? 'rgb(' + Math.round(rgba[0]) + ', ' + Math.round(rgba[1]) + ', ' + Math.round(rgba[2]) + ')'
+		: 'rgba(' + Math.round(rgba[0]) + ', ' + Math.round(rgba[1]) + ', ' + Math.round(rgba[2]) + ', ' + rgba[3] + ')';
 };
 
 cs.to.rgb.percent = function () {
@@ -13018,12 +13031,16 @@ cs.to.rgb.percent = function () {
 	var g = Math.round(rgba[1] / 255 * 100);
 	var b = Math.round(rgba[2] / 255 * 100);
 
-	return rgba.length < 4 || rgba[3] === 1 ? 'rgb(' + r + '%, ' + g + '%, ' + b + '%)' : 'rgba(' + r + '%, ' + g + '%, ' + b + '%, ' + rgba[3] + ')';
+	return rgba.length < 4 || rgba[3] === 1
+		? 'rgb(' + r + '%, ' + g + '%, ' + b + '%)'
+		: 'rgba(' + r + '%, ' + g + '%, ' + b + '%, ' + rgba[3] + ')';
 };
 
 cs.to.hsl = function () {
 	var hsla = swizzle(arguments);
-	return hsla.length < 4 || hsla[3] === 1 ? 'hsl(' + hsla[0] + ', ' + hsla[1] + '%, ' + hsla[2] + '%)' : 'hsla(' + hsla[0] + ', ' + hsla[1] + '%, ' + hsla[2] + '%, ' + hsla[3] + ')';
+	return hsla.length < 4 || hsla[3] === 1
+		? 'hsl(' + hsla[0] + ', ' + hsla[1] + '%, ' + hsla[2] + '%)'
+		: 'hsla(' + hsla[0] + ', ' + hsla[1] + '%, ' + hsla[2] + '%, ' + hsla[3] + ')';
 };
 
 // hwb is a bit different than rgb(a) & hsl(a) since there is no alpha specific syntax
@@ -13050,8 +13067,9 @@ function clamp(num, min, max) {
 
 function hexDouble(num) {
 	var str = num.toString(16).toUpperCase();
-	return str.length < 2 ? '0' + str : str;
+	return (str.length < 2) ? '0' + str : str;
 }
+
 
 /***/ }),
 /* 233 */
@@ -13655,14 +13673,6 @@ var BaseSprite = (_class = (_temp = _class2 = function (_BaseNode) {
 
       var setVal = function setVal(key, value) {
         _this2[_attr][key] = value;
-        if (key === 'zIndex' && _this2.parent) {
-          _this2.parent.children.sort(function (a, b) {
-            if (a.zIndex === b.zIndex) {
-              return a.zOrder - b.zOrder;
-            }
-            return a.zIndex - b.zIndex;
-          });
-        }
       };
       if ((typeof props === 'undefined' ? 'undefined' : (0, _typeof3.default)(props)) === 'object') {
         (0, _entries2.default)(props).forEach(function (_ref) {
@@ -15432,6 +15442,18 @@ var SpriteAttr = (_dec = (0, _spriteUtils.parseValue)(_spriteUtils.parseStringFl
         }
       });
       return ret;
+    },
+    set: function set(attrs) {
+      var _this4 = this;
+
+      (0, _entries2.default)(attrs).forEach(function (_ref5) {
+        var _ref6 = (0, _slicedToArray3.default)(_ref5, 2),
+            prop = _ref6[0],
+            value = _ref6[1];
+
+        _this4[prop] = value;
+      });
+      return attrs;
     }
   }, {
     key: 'subject',
@@ -15617,7 +15639,7 @@ var SpriteAttr = (_dec = (0, _spriteUtils.parseValue)(_spriteUtils.parseStringFl
   }, {
     key: 'transform',
     set: function set(val) {
-      var _this4 = this;
+      var _this5 = this;
 
       /*
         rotate: 0,
@@ -15640,15 +15662,15 @@ var SpriteAttr = (_dec = (0, _spriteUtils.parseValue)(_spriteUtils.parseStringFl
         this.set('transformMatrix', [1, 0, 0, 1, 0, 0]);
         var transformStr = [];
 
-        (0, _entries2.default)(val).forEach(function (_ref5) {
-          var _ref6 = (0, _slicedToArray3.default)(_ref5, 2),
-              key = _ref6[0],
-              value = _ref6[1];
+        (0, _entries2.default)(val).forEach(function (_ref7) {
+          var _ref8 = (0, _slicedToArray3.default)(_ref7, 2),
+              key = _ref8[0],
+              value = _ref8[1];
 
           if (key === 'matrix' && Array.isArray(value)) {
-            _this4.set('transformMatrix', new _spriteMath.Matrix(value).m);
+            _this5.set('transformMatrix', new _spriteMath.Matrix(value).m);
           } else {
-            _this4[key] = value;
+            _this5[key] = value;
           }
           transformStr.push(key + '(' + value + ')');
         });
@@ -15708,10 +15730,10 @@ var SpriteAttr = (_dec = (0, _spriteUtils.parseValue)(_spriteUtils.parseStringFl
   }, {
     key: 'skew',
     set: function set(val) {
-      var _ref7, _transform$multiply;
+      var _ref9, _transform$multiply;
 
       var oldVal = this.get('skew') || [0, 0];
-      var invm = (_ref7 = new _spriteMath.Matrix()).skew.apply(_ref7, (0, _toConsumableArray3.default)(oldVal)).inverse();
+      var invm = (_ref9 = new _spriteMath.Matrix()).skew.apply(_ref9, (0, _toConsumableArray3.default)(oldVal)).inverse();
       this.set('skew', val);
       var transform = new _spriteMath.Matrix(this.get('transformMatrix'));
       (_transform$multiply = transform.multiply(invm)).skew.apply(_transform$multiply, (0, _toConsumableArray3.default)(val));
@@ -15721,6 +15743,15 @@ var SpriteAttr = (_dec = (0, _spriteUtils.parseValue)(_spriteUtils.parseStringFl
     key: 'zIndex',
     set: function set(val) {
       this.set('zIndex', val);
+      var subject = this.subject;
+      if (subject.parent) {
+        subject.parent.children.sort(function (a, b) {
+          if (a.zIndex === b.zIndex) {
+            return a.zOrder - b.zOrder;
+          }
+          return a.zIndex - b.zIndex;
+        });
+      }
     }
 
     /**
@@ -16084,7 +16115,7 @@ var BaseNode = function () {
 
       var collisionState = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
       var swallow = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
-
+      // eslint-disable-line complexity
       var handlers = this.getEventHandlers(type);
       if (swallow && handlers.length === 0) {
         return;
@@ -16108,6 +16139,12 @@ var BaseNode = function () {
 
       var isCollision = collisionState || this.pointCollision(evt);
       var captured = this.isCaptured(evt);
+
+      if (this[_collisionState] && type === 'mouseleave') {
+        // dispatched from group
+        this[_collisionState] = false;
+        isCollision = true;
+      }
 
       if (!evt.terminated && (isCollision || captured)) {
         if (!evt.target) evt.target = this;
@@ -16146,7 +16183,7 @@ var BaseNode = function () {
           var _evt = (0, _assign2.default)({}, evt);
           _evt.type = 'mouseenter';
           _evt.terminated = false;
-          this.dispatchEvent('mouseenter', _evt, true);
+          this.dispatchEvent('mouseenter', _evt, true, true);
           this[_collisionState] = true;
         }
       }
@@ -16154,10 +16191,10 @@ var BaseNode = function () {
       if (this[_collisionState] && !isCollision && type === 'mousemove') {
         var _evt2 = (0, _assign2.default)({}, evt);
         _evt2.type = 'mouseleave';
-        _evt2.target = this;
+        delete _evt2.target;
         _evt2.terminated = false;
-        this.dispatchEvent('mouseleave', _evt2, true);
-        this[_collisionState] = false;
+        this.dispatchEvent('mouseleave', _evt2);
+        // this[_collisionState] = false;
       }
 
       return isCollision;
@@ -19588,13 +19625,13 @@ var Layer = function (_BaseNode) {
       if (swallow && this.getEventHandlers(type).length === 0) {
         return;
       }
-      if (!swallow && !evt.terminated && type !== 'mouseenter' && type !== 'mouseleave') {
+      if (!swallow && !evt.terminated && type !== 'mouseenter') {
         var isCollision = collisionState || this.pointCollision(evt);
         var changedTouches = evt.originalEvent && evt.originalEvent.changedTouches;
         if (changedTouches && type === 'touchend') {
           isCollision = true;
         }
-        if (isCollision) {
+        if (isCollision || type === 'mouseleave') {
           var sprites = this[_children].slice(0).reverse(),
               targetSprites = [];
 
@@ -20215,9 +20252,9 @@ var Group = (_class3 = (_temp2 = _class4 = function (_BaseSprite) {
       if (swallow && this.getEventHandlers(type).length === 0) {
         return;
       }
-      if (!swallow && !evt.terminated && type !== 'mouseenter' && type !== 'mouseleave') {
+      if (!swallow && !evt.terminated && type !== 'mouseenter') {
         var isCollision = collisionState || this.pointCollision(evt);
-        if (isCollision) {
+        if (isCollision || type === 'mouseleave') {
           var scrollLeft = this.attr('scrollLeft'),
               scrollTop = this.attr('scrollTop'),
               borderWidth = this.attr('border').width,
@@ -21942,8 +21979,6 @@ __webpack_require__.r(__webpack_exports__);
 
 const _loadBgImagePassport = Symbol('loadBgImagePassport');
 
-let passport;
-
 sprite_core__WEBPACK_IMPORTED_MODULE_0__["BaseSprite"].prototype.loadBgImage = function (val) {
   let res;
   if (val.id) {
@@ -21952,7 +21987,7 @@ sprite_core__WEBPACK_IMPORTED_MODULE_0__["BaseSprite"].prototype.loadBgImage = f
     res = _resource__WEBPACK_IMPORTED_MODULE_1__["default"].loadTexture(val.src);
   }
   if (res instanceof Promise) {
-    passport = Symbol('passport');
+    const passport = Symbol('passport');
     this[_loadBgImagePassport] = passport;
     res.then(({ img, texture }) => {
       if (passport === this[_loadBgImagePassport]) {
@@ -24788,7 +24823,7 @@ let _default = class _default extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["
 /* 324 */
 /***/ (function(module) {
 
-module.exports = {"_from":"spritejs@^2.9.1","_id":"spritejs@2.9.1","_inBundle":false,"_integrity":"sha512-4eKaJPrHWyUNR0iYoM9p+B4uThfAo6qFkVi8Q2cB4bA7mB+VKo7UuF2BffvWS7hzopOAycMIBAx6sLamuGU5gQ==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.9.1","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.9.1","saveSpec":null,"fetchSpec":"^2.9.1"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.9.1.tgz","_shasum":"dc7364b8eed5d9994595e41a7e57e37be32a5c8c","_spec":"spritejs@^2.9.1","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.11.1"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^11.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.9.1"};
+module.exports = {"_from":"spritejs@^2.9.4","_id":"spritejs@2.9.4","_inBundle":false,"_integrity":"sha512-E/jE9l8Xie+OPUvAPh5mVByD0pGUahvcjhJsCJFtxhET7eZOYJmgu2V1/GASd2pTc9WE8wNb2MvbLwXklOAqKQ==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.9.4","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.9.4","saveSpec":null,"fetchSpec":"^2.9.4"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.9.4.tgz","_shasum":"cc3865f4dceae19f1476bca4c47d1794d107e3ef","_spec":"spritejs@^2.9.4","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.11.3"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^11.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.9.4"};
 
 /***/ }),
 /* 325 */
@@ -24837,7 +24872,12 @@ __webpack_require__.r(__webpack_exports__);
 
 
 function createElement(tagName, vnode) {
-  if (Object(spritejs__WEBPACK_IMPORTED_MODULE_1__["isValidNodeType"])(tagName)) {
+  let isSpriteNode = tagName.toLowerCase() !== 'label' && Object(spritejs__WEBPACK_IMPORTED_MODULE_1__["isValidNodeType"])(tagName);
+  if (tagName.startsWith('s-')) {
+    tagName = tagName.slice(2);
+    isSpriteNode = Object(spritejs__WEBPACK_IMPORTED_MODULE_1__["isValidNodeType"])(tagName);
+  }
+  if (isSpriteNode) {
     let attrs = {};
     if (vnode.data && vnode.data.attrs) {
       attrs = vnode.data.attrs;
