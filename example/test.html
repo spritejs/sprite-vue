@@ -5,39 +5,62 @@
   <meta name="viewport" content="width=device-width">
   <title>Example</title>
   <script src="/js/sprite-vue.js"></script>
+  <!-- <script src="/js/sprite-vue-debug.js"></script> -->
 </head>
 <body>
   <div id="app"></div>
   <script>
 const { Vue } = spritevue
 
+Vue.component('my-scene', {
+  data () {
+    return {
+      viewport: [600, 600],
+      items: [
+        { id: 'stop-btn', bgcolor: 'red', opacity: 0.5 },
+        { id: 'warn-btn', bgcolor: '#fc0', opacity: 0.5 },
+        { id: 'pass-btn', bgcolor: 'green', opacity: 0.5 }
+      ]
+    }
+  },
+  methods: {
+    enter (index) {
+      console.log('enter')
+      this.items[index].opacity = 1.0
+    },
+    leave (index) {
+      console.log('leave')
+      this.items[index].opacity = 0.5
+    },
+    tap (index) {
+      console.log(index)
+    }
+  },
+  template: `
+    <scene id="container" :viewport=viewport>
+      <layer id="fglayer">
+        <group width="500" display="flex" y="100" justifyContent="space-between" bgcolor="grey">
+          <sprite v-for="(item, index) in items" :pos="[100 * index, 100]" :size="[50, 50]"
+            :bgcolor="item.bgcolor" :opacity="item.opacity"
+            v-on:mouseenter="enter(index)"
+            v-on:mouseleave="leave(index)"
+            v-on:click="tap(index)"></sprite>
+        </group>
+      </layer>
+    </scene>
+  `
+})
+
 new Vue({
   el: '#app',
   data () {
     return {
-      viewport: [600, 600],
-      attrs: {
-        pos: [100, 100],
-        size: [50, 50],
-        bgcolor: 'red'
-      }
+      viewport: [600, 600]
     }
   },
   template: `<div>
-  <label>abc</label>
-  <scene id="container" :viewport=viewport>
-    <layer id="fglayer">
-      <my-component></my-component>
-      <sprite :attrs="attrs"></sprite>
-    </layer>
-  </scene>
-</div>`,
-  components: {
-    'my-component': {
-      template: `<s-label :pos="[200, 100]" :size="[50, 50]"
-        bgcolor="red">Hello~</s-label>`
-    }
-  }
+  <my-scene></my-scene>
+</div>`
 })
   </script>
 </body>

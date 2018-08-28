@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Example</title>
+  <script src="/js/sprite-vue.js"></script>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+const { spritejs } = spritevue;
+
+const {Scene, Group, Sprite} = spritejs;
+
+const scene = new Scene('#app', 600, 600);
+const layer = scene.layer();
+
+const group = new Group({
+  display: 'flex',
+  width: 600,
+  y: 100,
+  justifyContent: 'space-between',
+});
+const s1 = new Sprite({
+  size: [50, 50],
+  pos: [100, 100],
+  bgcolor: 'red',
+  opacity: 0.5,
+});
+const s2 = s1.cloneNode()
+group.append(s1, s2);
+layer.append(group);
+
+s1.on('mouseenter', () => {
+  console.log('enter');
+  s1.attr('opacity', 1.0);
+})
+s1.on('mouseleave', () => {
+  console.log('leave');
+  s1.attr('opacity', 0.5);
+})
+
+s2.on('mouseenter', () => {
+  console.log('enter');
+  s2.attr('opacity', 1.0);
+})
+s2.on('mouseleave', () => {
+  console.log('leave');
+  s2.attr('opacity', 0.5);
+})
+  </script>
+</body>
+</html>
