@@ -15749,6 +15749,9 @@ var SpriteAttr = (_dec = (0, _spriteUtils.parseValue)(_spriteUtils.parseStringFl
     set: function set(attrs) {
       var _this4 = this;
 
+      if (Array.isArray(attrs)) {
+        attrs = _assign2.default.apply(Object, [{}].concat((0, _toConsumableArray3.default)(attrs)));
+      }
       (0, _entries2.default)(attrs).forEach(function (_ref5) {
         var _ref6 = (0, _slicedToArray3.default)(_ref5, 2),
             prop = _ref6[0],
@@ -18170,7 +18173,7 @@ var LabelSpriteAttr = (_dec = (0, _spriteUtils.parseValue)(parseFloat), _dec2 = 
     var _this = (0, _possibleConstructorReturn3.default)(this, (LabelSpriteAttr.__proto__ || (0, _getPrototypeOf2.default)(LabelSpriteAttr)).call(this, subject));
 
     _this.setDefault({
-      font: '16px Arial',
+      font: 'normal normal normal 16px Arial',
       textAlign: 'left',
       strokeColor: '',
       fillColor: '',
@@ -18203,6 +18206,116 @@ var LabelSpriteAttr = (_dec = (0, _spriteUtils.parseValue)(parseFloat), _dec2 = 
       this.clearCache();
       this.set('font', val);
       calculTextboxSize(this.subject);
+    }
+  }, {
+    key: 'fontSize',
+    set: function set(val) {
+      if (val == null) val = '16px';
+      var unit = 'px';
+      if (typeof val === 'string') {
+        var unitReg = /^(\d+)(\w+)/;
+        var matches = val.match(unitReg);
+        if (!matches) {
+          return null;
+        }
+        val = parseInt(matches[1], 10);
+        unit = matches[2];
+      }
+      var font = this.font;
+
+      var _parseFont2 = parseFont(font),
+          style = _parseFont2.style,
+          variant = _parseFont2.variant,
+          weight = _parseFont2.weight,
+          family = _parseFont2.family;
+
+      var fontValue = style + ' ' + variant + ' ' + weight + ' ' + val + unit + ' ' + family;
+      this.font = fontValue;
+    },
+    get: function get() {
+      var font = this.font;
+
+      var _parseFont3 = parseFont(font),
+          size = _parseFont3.size,
+          unit = _parseFont3.unit;
+
+      return '' + size + unit;
+    }
+  }, {
+    key: 'fontFamily',
+    set: function set(val) {
+      if (val == null) val = 'Arial';
+      var font = this.font;
+
+      var _parseFont4 = parseFont(font),
+          style = _parseFont4.style,
+          variant = _parseFont4.variant,
+          weight = _parseFont4.weight,
+          size = _parseFont4.size,
+          unit = _parseFont4.unit;
+
+      var fontValue = style + ' ' + variant + ' ' + weight + ' ' + size + unit + ' ' + val;
+      this.font = fontValue;
+    },
+    get: function get() {
+      return parseFont(this.font).family;
+    }
+  }, {
+    key: 'fontStyle',
+    set: function set(val) {
+      if (val == null) val = 'normal';
+      var font = this.font;
+
+      var _parseFont5 = parseFont(font),
+          variant = _parseFont5.variant,
+          weight = _parseFont5.weight,
+          size = _parseFont5.size,
+          unit = _parseFont5.unit,
+          family = _parseFont5.family;
+
+      var fontValue = val + ' ' + variant + ' ' + weight + ' ' + size + unit + ' ' + family;
+      this.font = fontValue;
+    },
+    get: function get() {
+      return parseFont(this.font).style;
+    }
+  }, {
+    key: 'fontVariant',
+    set: function set(val) {
+      if (val == null) val = 'normal';
+      var font = this.font;
+
+      var _parseFont6 = parseFont(font),
+          style = _parseFont6.style,
+          weight = _parseFont6.weight,
+          size = _parseFont6.size,
+          unit = _parseFont6.unit,
+          family = _parseFont6.family;
+
+      var fontValue = style + ' ' + val + ' ' + weight + ' ' + size + unit + ' ' + family;
+      this.font = fontValue;
+    },
+    get: function get() {
+      return parseFont(this.font).variant;
+    }
+  }, {
+    key: 'fontWeight',
+    set: function set(val) {
+      if (val == null) val = 'normal';
+      var font = this.font;
+
+      var _parseFont7 = parseFont(font),
+          style = _parseFont7.style,
+          variant = _parseFont7.variant,
+          size = _parseFont7.size,
+          unit = _parseFont7.unit,
+          family = _parseFont7.family;
+
+      var fontValue = style + ' ' + variant + ' ' + val + ' ' + size + unit + ' ' + family;
+      this.font = fontValue;
+    },
+    get: function get() {
+      return parseFont(this.font).weight;
     }
   }, {
     key: 'lineHeight',
@@ -18285,7 +18398,7 @@ var LabelSpriteAttr = (_dec = (0, _spriteUtils.parseValue)(parseFloat), _dec2 = 
     }
   }]);
   return LabelSpriteAttr;
-}(_basesprite2.default.Attr), (_applyDecoratedDescriptor(_class.prototype, 'text', [_spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'text'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'font', [_spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'font'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'lineHeight', [_dec, _spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'lineHeight'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'textAlign', [_spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'textAlign'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'color', [_spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'color'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'strokeColor', [_dec2, _spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'strokeColor'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fillColor', [_dec3, _spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'fillColor'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'flexible', [_spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'flexible'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'lineBreak', [_spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'lineBreak'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'wordBreak', [_spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'wordBreak'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'letterSpacing', [_dec4, _spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'letterSpacing'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'textIndent', [_dec5, _spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'textIndent'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'width', [_spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'width'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'layoutWidth', [_spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'layoutWidth'), _class.prototype)), _class));
+}(_basesprite2.default.Attr), (_applyDecoratedDescriptor(_class.prototype, 'text', [_spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'text'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'font', [_spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'font'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fontSize', [_spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'fontSize'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fontFamily', [_spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'fontFamily'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fontStyle', [_spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'fontStyle'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fontVariant', [_spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'fontVariant'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fontWeight', [_spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'fontWeight'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'lineHeight', [_dec, _spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'lineHeight'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'textAlign', [_spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'textAlign'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'color', [_spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'color'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'strokeColor', [_dec2, _spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'strokeColor'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fillColor', [_dec3, _spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'fillColor'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'flexible', [_spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'flexible'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'lineBreak', [_spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'lineBreak'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'wordBreak', [_spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'wordBreak'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'letterSpacing', [_dec4, _spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'letterSpacing'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'textIndent', [_dec5, _spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'textIndent'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'width', [_spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'width'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'layoutWidth', [_spriteUtils.attr], (0, _getOwnPropertyDescriptor2.default)(_class.prototype, 'layoutWidth'), _class.prototype)), _class));
 var Label = (_class2 = (_temp = _class3 = function (_BaseSprite) {
   (0, _inherits3.default)(Label, _BaseSprite);
 
@@ -18419,12 +18532,12 @@ var Label = (_class2 = (_temp = _class3 = function (_BaseSprite) {
       var textboxSize = this.textboxSize,
           contentSize = this.contentSize;
 
-      var _parseFont2 = parseFont(font),
-          style = _parseFont2.style,
-          variant = _parseFont2.variant,
-          weight = _parseFont2.weight,
-          size = _parseFont2.size,
-          family = _parseFont2.family;
+      var _parseFont8 = parseFont(font),
+          style = _parseFont8.style,
+          variant = _parseFont8.variant,
+          weight = _parseFont8.weight,
+          size = _parseFont8.size,
+          family = _parseFont8.family;
 
       size *= contentSize[0] / textboxSize[0];
       return style + ' ' + variant + ' ' + weight + ' ' + Math.floor(size) + 'px "' + family + '"';
@@ -19516,7 +19629,7 @@ module.exports = function f(str, defaultHeight) {
     variant: 'normal',
     size: parseFloat(sizeFamily[1]),
     unit: sizeFamily[2],
-    family: sizeFamily[3].replace(/["']/g, '').replace(/ *, */g, ',')
+    family: sizeFamily[3].replace(/ *, */g, ',')
 
     // Optional, unordered properties.
   };var weight = void 0,
@@ -26433,7 +26546,7 @@ $export($export.S, 'Object', {
 /* 350 */
 /***/ (function(module) {
 
-module.exports = {"_from":"spritejs@^2.9.5","_id":"spritejs@2.9.5","_inBundle":false,"_integrity":"sha512-P1eE5eObQqtcmzDiFcZAHCU9WKE3D+SCQjE5jOJtZiHBlAcT14Jjqzv7Su9bTqiKDG0tGgDcDvm/6XlloXCIZQ==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.9.5","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.9.5","saveSpec":null,"fetchSpec":"^2.9.5"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.9.5.tgz","_shasum":"a8945d7631edafc981b75e460405666b046bbdae","_spec":"spritejs@^2.9.5","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.11.6"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^11.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.9.5"};
+module.exports = {"_from":"spritejs@^2.10.0","_id":"spritejs@2.10.0","_inBundle":false,"_integrity":"sha512-MNu3CdoDO/uDDvRwpRK4R4WUrh2lwOoZ7buV39xHwvTX0Ea+YgTnuGplCf9zQDeNHn0oeLxWRpHJ8G7qVbEO9Q==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.10.0","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.10.0","saveSpec":null,"fetchSpec":"^2.10.0"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.10.0.tgz","_shasum":"d82abc47028b4ba534c28eeb8350bd8807a940b7","_spec":"spritejs@^2.10.0","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.12.0"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^11.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.10.0"};
 
 /***/ }),
 /* 351 */
