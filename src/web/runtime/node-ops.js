@@ -1,10 +1,10 @@
 /* @flow */
 
-import { namespaceMap } from 'web/util/index'
+import { namespaceMap, isReservedTag } from 'web/util/index'
 import { isValidNodeType, createNode, Scene, Label, BaseNode } from 'spritejs'
 
 export function createElement (tagName: string, vnode: VNode): Element {
-  let isSpriteNode = tagName.toLowerCase() !== 'label' && isValidNodeType(tagName)
+  let isSpriteNode = !isReservedTag(tagName) && isValidNodeType(tagName)
   if (tagName.startsWith('s-')) {
     tagName = tagName.slice(2)
     isSpriteNode = isValidNodeType(tagName)
@@ -94,6 +94,16 @@ export function appendChild (node: Node, child: Node) {
     }
     if (child instanceof BaseNode || child.nodeType === document.COMMENT_NODE) {
       node.appendChild(child)
+    } else if (child.nodeType !== document.TEXT_NODE) {
+      const nodeType = child.tagName.toLowerCase()
+      if (nodeType) {
+        console.error(`Node#${nodeType} is not a sprite node.`, child)
+        if (isValidNodeType(nodeType)) {
+          console.warn(`'${nodeType}' is a reserved tag name, Use 's-${nodeType}' instead.`)
+        }
+      } else {
+        console.error('Unknown node:', child)
+      }
     }
   } else {
     node.appendChild(child)

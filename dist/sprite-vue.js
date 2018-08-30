@@ -26841,7 +26841,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 function createElement(tagName, vnode) {
-  var isSpriteNode = tagName.toLowerCase() !== 'label' && Object(spritejs__WEBPACK_IMPORTED_MODULE_1__["isValidNodeType"])(tagName);
+  var isSpriteNode = !Object(web_util_index__WEBPACK_IMPORTED_MODULE_0__["isReservedTag"])(tagName) && Object(spritejs__WEBPACK_IMPORTED_MODULE_1__["isValidNodeType"])(tagName);
   if (tagName.startsWith('s-')) {
     tagName = tagName.slice(2);
     isSpriteNode = Object(spritejs__WEBPACK_IMPORTED_MODULE_1__["isValidNodeType"])(tagName);
@@ -26937,6 +26937,16 @@ function appendChild(node, child) {
     }
     if (child instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["BaseNode"] || child.nodeType === document.COMMENT_NODE) {
       node.appendChild(child);
+    } else if (child.nodeType !== document.TEXT_NODE) {
+      var nodeType = child.tagName.toLowerCase();
+      if (nodeType) {
+        console.error('Node#' + nodeType + ' is not a sprite node.', child);
+        if (Object(spritejs__WEBPACK_IMPORTED_MODULE_1__["isValidNodeType"])(nodeType)) {
+          console.warn('\'' + nodeType + '\' is a reserved tag name, Use \'s-' + nodeType + '\' instead.');
+        }
+      } else {
+        console.error('Unknown node:', child);
+      }
     }
   } else {
     node.appendChild(child);
