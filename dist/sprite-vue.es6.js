@@ -13576,9 +13576,9 @@ function attr(target, prop, descriptor) {
         this.subject.reflow();
       }
     }
-    delete this.__reflowTag;
-    delete this.__updateTag;
-    delete this.__clearCacheTag;
+    // delete this.__reflowTag;
+    // delete this.__updateTag;
+    // delete this.__clearCacheTag;
   };
   return descriptor;
 }
@@ -14050,6 +14050,7 @@ var BaseSprite = (_class = (_temp = _class2 = function (_BaseNode) {
         if (this[_changeStateAction].reversable && (currentAnim.playState === 'running' || currentAnim.playState === 'pending') && this[_changeStateAction].fromState === toState && this[_changeStateAction].toState === fromState) {
           currentAnim.playbackRate = -currentAnim.playbackRate;
           animation = currentAnim;
+          animation.__reversed = this[_changeStateAction].action;
         } else {
           currentAnim.finish();
         }
@@ -14060,7 +14061,7 @@ var BaseSprite = (_class = (_temp = _class2 = function (_BaseNode) {
           if (_this4[_changeStateAction] && _this4[_changeStateAction].animation === animation) delete _this4[_changeStateAction];
         });
       }
-      this[_changeStateAction] = { animation: animation, fromState: fromState, toState: toState, reversable: action.reversable !== false };
+      this[_changeStateAction] = { animation: animation, fromState: fromState, toState: toState, action: action, reversable: action.reversable !== false };
       return animation;
     }
   }, {
@@ -14880,9 +14881,9 @@ var BaseSprite = (_class = (_temp = _class2 = function (_BaseNode) {
                   this.subject.reflow();
                 }
               }
-              delete this.__reflowTag;
-              delete this.__updateTag;
-              delete this.__clearCacheTag;
+              // delete this.__reflowTag;
+              // delete this.__updateTag;
+              // delete this.__clearCacheTag;
             },
 
             get: getter
@@ -15585,6 +15586,9 @@ var SpriteAttr = (_dec = (0, _spriteUtils.parseValue)(_spriteUtils.parseStringFl
   }, {
     key: 'quietSet',
     value: function quietSet(key, val) {
+      if (val == null) {
+        val = this[_default][key];
+      }
       this[_attr][key] = val;
     }
   }, {
@@ -16222,27 +16226,38 @@ var SpriteAttr = (_dec = (0, _spriteUtils.parseValue)(_spriteUtils.parseStringFl
               action = actions[oldState + ':' + val] || actions[':' + val] || actions[oldState + ':'];
               if (action) {
                 var evt = { from: [oldState, fromState], to: [val, toState], action: action };
-                subject.dispatchEvent('action.beforestart', evt, true, true);
+                subject.dispatchEvent('action-beforestart', evt, true, true);
                 if (evt.returnValue) {
                   var animation = subject.changeState(fromState, toState, action);
-                  subject.dispatchEvent('action.start', { from: [oldState, fromState], to: [val, toState], action: action, animation: animation }, true, true);
+                  var tag = (0, _symbol2.default)('tag');
+                  animation.tag = tag;
+                  if (animation.__reversed) {
+                    subject.dispatchEvent('action-finished', {
+                      from: [val, toState],
+                      to: [oldState, fromState],
+                      action: animation.__reversed,
+                      animation: animation }, true, true);
+                  }
+                  subject.dispatchEvent('action-start', { from: [oldState, fromState], to: [val, toState], action: action, animation: animation }, true, true);
                   animation.ready.then(function () {
-                    subject.dispatchEvent('action.ready', { from: [oldState, fromState], to: [val, toState], action: action, animation: animation }, true, true);
+                    subject.dispatchEvent('action-ready', { from: [oldState, fromState], to: [val, toState], action: action, animation: animation }, true, true);
                   });
                   animation.finished.then(function () {
-                    subject.dispatchEvent('action.finished', { from: [oldState, fromState], to: [val, toState], action: action, animation: animation }, true, true);
+                    if (animation.tag === tag) {
+                      subject.dispatchEvent('action-finished', { from: [oldState, fromState], to: [val, toState], action: action, animation: animation }, true, true);
+                    }
                   });
                 }
               }
             }
             if (!action) {
               var _evt = { from: [oldState, fromState], to: [val, toState] };
-              subject.dispatchEvent('action.beforestart', _evt, true, true);
+              subject.dispatchEvent('action-beforestart', _evt, true, true);
               if (_evt.returnValue) {
-                subject.dispatchEvent('action.start', { from: [oldState, fromState], to: [val, toState] }, true, true);
-                subject.dispatchEvent('action.ready', { from: [oldState, fromState], to: [val, toState] }, true, true);
+                subject.dispatchEvent('action-start', { from: [oldState, fromState], to: [val, toState] }, true, true);
+                subject.dispatchEvent('action-ready', { from: [oldState, fromState], to: [val, toState] }, true, true);
                 subject.attr(toState);
-                subject.dispatchEvent('action.finished', { from: [oldState, fromState], to: [val, toState] }, true, true);
+                subject.dispatchEvent('action-finished', { from: [oldState, fromState], to: [val, toState] }, true, true);
               }
             }
           }
@@ -22198,7 +22213,7 @@ var PathSpriteAttr = (_dec = (0, _spriteUtils.parseValue)(parseFloat), _dec2 = (
     key: 'bounding',
     set: function set(val) {
       // box | path
-      this.set('bounding', val);
+      this.quietSet('bounding', val);
     }
   }, {
     key: 'color',
@@ -25319,7 +25334,7 @@ let _default = class _default extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["
 /* 330 */
 /***/ (function(module) {
 
-module.exports = {"_from":"spritejs@^2.12.1","_id":"spritejs@2.12.1","_inBundle":false,"_integrity":"sha512-hbmAR42cYjDtgrU5IUxE9NeglHriK8XbdwuJUfa0GoC/KNEf6lSSWUhTg2hpm2cKNFVwz7cIRBG2P1sfXA0twQ==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.12.1","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.12.1","saveSpec":null,"fetchSpec":"^2.12.1"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.12.1.tgz","_shasum":"09c2e270945f1c6b75ea4719b19386e791e6e8f0","_spec":"spritejs@^2.12.1","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.14.2"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^11.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.12.1"};
+module.exports = {"_from":"spritejs@^2.12.3","_id":"spritejs@2.12.3","_inBundle":false,"_integrity":"sha512-xJpJy+73zWyDnrEHpKERJNqlYj8OUFxDY1oay0XPgOdQOOCTxfPzDAbOul0wSHffj9FQnHMHDSbFSelnb1mmgw==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.12.3","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.12.3","saveSpec":null,"fetchSpec":"^2.12.3"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.12.3.tgz","_shasum":"d72ac06e317c6b99086fdf54963ebd6c01fec75f","_spec":"spritejs@^2.12.3","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.14.4"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^11.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.12.3"};
 
 /***/ }),
 /* 331 */

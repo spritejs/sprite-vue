@@ -16,24 +16,45 @@ Vue.component('my-scene', {
   data () {
     return {
       viewport: [600, 600],
+      text: 'Hello',
       items: [
-        { id: 'stop-btn', bgcolor: 'red', opacity: 0.5 },
-        { id: 'warn-btn', bgcolor: '#fc0', opacity: 0.5 },
-        { id: 'pass-btn', bgcolor: 'green', opacity: 0.5 }
+        { id: 'stop-btn', bgcolor: 'red', state: 'deactive' },
+        { id: 'warn-btn', bgcolor: '#fc0', state: 'deactive' },
+        { id: 'pass-btn', bgcolor: 'green', state: 'deactive' }
+      ],
+      states: {
+        active: {
+          opacity: 1.0
+        },
+        deactive: {
+          opacity: 0.2
+        }
+      },
+      actions: [
+        {
+          both: ['active', 'deactive'],
+          action: {
+            duration: 1000,
+            easing: 'ease-in-out'
+          }
+        }
       ]
     }
   },
   methods: {
     enter (index) {
       console.log('enter')
-      this.items[index].opacity = 1.0
+      this.items[index].state = 'active'
     },
     leave (index) {
       console.log('leave')
-      this.items[index].opacity = 0.5
+      this.items[index].state = 'deactive'
     },
     tap (index) {
       console.log(index)
+    },
+    changed (evt) {
+      console.log('state changed!', evt)
     }
   },
   template: `
@@ -41,11 +62,12 @@ Vue.component('my-scene', {
       <layer id="fglayer">
         <group width="500" display="flex" y="100" justifyContent="space-between" bgcolor="grey">
           <sprite v-for="(item, index) in items" :pos="[100 * index, 100]" :size="[50, 50]"
-            :bgcolor="item.bgcolor" :opacity="item.opacity"
+            :bgcolor="item.bgcolor"
             v-on:mouseenter="enter(index)"
             v-on:mouseleave="leave(index)"
-            v-on:click="tap(index)"></sprite>
-          <s-path></s-path>
+            v-on:click="tap(index)"
+            :states="states" :actions="actions" :state="item.state"
+            v-on:action-finished="changed"></sprite>
         </group>
       </layer>
     </scene>
@@ -54,11 +76,6 @@ Vue.component('my-scene', {
 
 new Vue({
   el: '#app',
-  data () {
-    return {
-      viewport: [600, 600]
-    }
-  },
   template: `<div>
   <my-scene></my-scene>
 </div>`
