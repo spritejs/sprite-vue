@@ -1,7 +1,7 @@
 /* @flow */
 
 import { namespaceMap, isReservedTag } from 'web/util/index'
-import { isValidNodeType, createNode, Scene, Label, BaseNode } from 'spritejs'
+import { isValidNodeType, createNode, Scene, Label, BaseNode, DataNode } from 'spritejs'
 
 export function createElement (tagName: string, vnode: VNode): Element {
   let isSpriteNode = !isReservedTag(tagName) && isValidNodeType(tagName)
@@ -55,6 +55,10 @@ export function createComment (text: string): Comment {
   comment.dispatchEvent = () => false
   comment.forceUpdate = () => false
   comment.isVisible = () => false
+  comment.__data = new DataNode({ display: 'none' })
+  comment.attr = (...args) => {
+    return comment.__data.attr(...args)
+  }
   return comment
 }
 
