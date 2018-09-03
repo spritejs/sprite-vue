@@ -24,11 +24,11 @@ const group = new Group({
 });
 const s1 = new Sprite({
   size: [50, 50],
-  pos: [100, 100],
   bgcolor: 'red',
   opacity: 0.5,
 });
 const s2 = s1.cloneNode()
+s2.attr({bgcolor: 'green'});
 group.append(s1, s2);
 layer.append(group);
 
