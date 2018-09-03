@@ -17206,19 +17206,33 @@ function _interopRequireDefault(obj) {
 var _defaultEffect = _spriteAnimator.Effects.default;
 
 var defaultEffect = function defaultEffect(from, to, p, start, end) {
-  var unit = null;
-  var isStr = typeof from === 'string' && typeof to === 'string';
-  if (isStr && from.endsWith('%') && to.endsWith('%')) {
-    unit = '%';
+  var unitFrom = 'px',
+      unitTo = 'px';
+  var matchFrom = null,
+      matchTo = null;
+
+  var exp = /^(\d+|\d*\.\d+)(%|rh|rw)$/i;
+  if (typeof from === 'string') {
+    matchFrom = exp.exec(from);
+    if (matchFrom) {
+      unitFrom = matchFrom[2];
+    }
   }
-  if (isStr && from.endsWith('rw') && to.endsWith('rw')) {
-    unit = 'rw';
+
+  if (typeof to === 'string') {
+    matchTo = exp.exec(to);
+    if (matchTo) {
+      unitTo = matchTo[2];
+    }
   }
-  if (isStr && from.endsWith('rh') && to.endsWith('rh')) {
-    unit = 'rh';
+
+  if (unitFrom === unitTo) {
+    if (matchFrom) from = parseFloat(matchFrom[1]);
+    if (matchTo) to = parseFloat(matchTo[1]);
   }
-  var v = _defaultEffect(parseFloat(from), parseFloat(to), p, start, end);
-  return unit ? '' + v + unit : v;
+
+  var v = _defaultEffect(from, to, p, start, end);
+  return unitFrom !== 'px' ? '' + v + unitFrom : v;
 };
 
 _spriteAnimator.Effects.default = defaultEffect;
@@ -22565,7 +22579,7 @@ function _interopRequireDefault(obj) {
 
 var _applyDecoratedDescriptor = __webpack_require__(289);
 
-var PathSpriteAttr = (_dec = (0, _utils.inherit)(1), _dec2 = (0, _utils.inherit)(null), _dec3 = (0, _utils.inherit)(0), _dec4 = (0, _utils.inherit)('butt'), _dec5 = (0, _utils.inherit)('miter'), _dec6 = (0, _utils.inherit)(''), _dec7 = (0, _utils.inherit)(''), _dec8 = (0, _utils.inherit)('box'), _dec9 = (0, _utils.deprecate)('Instead use strokeColor.'), (_class = function (_BaseSprite$Attr) {
+var PathSpriteAttr = (_dec = (0, _utils.inherit)(1), _dec2 = (0, _utils.parseValue)(_utils.parseStringFloat), _dec3 = (0, _utils.parseValue)(parseFloat), _dec4 = (0, _utils.inherit)('butt'), _dec5 = (0, _utils.inherit)('miter'), _dec6 = (0, _utils.inherit)(''), _dec7 = (0, _utils.inherit)(''), _dec8 = (0, _utils.inherit)('box'), _dec9 = (0, _utils.deprecate)('Instead use strokeColor.'), (_class = function (_BaseSprite$Attr) {
   (0, _inherits3.default)(PathSpriteAttr, _BaseSprite$Attr);
 
   function PathSpriteAttr(subject) {
@@ -22632,13 +22646,13 @@ var PathSpriteAttr = (_dec = (0, _utils.inherit)(1), _dec2 = (0, _utils.inherit)
   }, {
     key: 'lineDash',
     set: function set(val) {
+      if (typeof val === 'number') val = [val];
       this.clearCache();
       this.set('lineDash', val);
     }
   }, {
     key: 'lineDashOffset',
     set: function set(val) {
-      if (typeof val === 'string') val = parseFloat(val);
       this.clearCache();
       this.set('lineDashOffset', val);
     }
@@ -27123,7 +27137,7 @@ $export($export.S, 'Object', {
 /* 356 */
 /***/ (function(module) {
 
-module.exports = {"_from":"spritejs@^2.13.1","_id":"spritejs@2.13.1","_inBundle":false,"_integrity":"sha512-WooZctecrd5flmPvyqq1SP3jwsLOV9eJTts+edQzjwOrwaK+LnX6kECGny1U05RFPglJ3RwEnVVwfWgINQHRjg==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.13.1","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.13.1","saveSpec":null,"fetchSpec":"^2.13.1"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.13.1.tgz","_shasum":"a399a4ed5516b196f69ac759557f709da0630a19","_spec":"spritejs@^2.13.1","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.15.1"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^11.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.13.1"};
+module.exports = {"_from":"spritejs@^2.13.3","_id":"spritejs@2.13.3","_inBundle":false,"_integrity":"sha512-EtmZ2VwoUd1Coe7eSuN7aCRQCNlgn3MC9812T4xFektEJ4+RZtq/Q6LcvTmRNaEkg46L4M8MOVqKBi6p9pAIpg==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.13.3","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.13.3","saveSpec":null,"fetchSpec":"^2.13.3"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.13.3.tgz","_shasum":"ea585033ca8a784b7e1d1bce5ab0b02f11145d8b","_spec":"spritejs@^2.13.3","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.15.3"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^11.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.13.3"};
 
 /***/ }),
 /* 357 */

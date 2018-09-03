@@ -61,7 +61,7 @@ Vue.component('my-scene', {
     <scene id="container" :viewport=viewport>
       <layer id="fglayer">
         <group width="500" display="flex" y="100" justifyContent="space-between" bgcolor="grey">
-          <sprite v-for="(item, index) in items" :size="[50, 50]"
+          <sprite v-if="index < 2" v-for="(item, index) in items" :size="[50, 50]"
             :bgcolor="item.bgcolor"
             v-on:mouseenter="enter(index)"
             v-on:mouseleave="leave(index)"
