@@ -8850,6 +8850,8 @@ function _interopRequireDefault(obj) {
   return obj && obj.__esModule ? obj : { default: obj };
 }
 
+var _nowtime = (0, _utils.createNowTime)();
+
 var defaultOptions = {
   originTime: 0,
   playbackRate: 1.0
@@ -8860,8 +8862,7 @@ var _timeMark = (0, _symbol2.default)('timeMark'),
     _timers = (0, _symbol2.default)('timers'),
     _originTime = (0, _symbol2.default)('originTime'),
     _setTimer = (0, _symbol2.default)('setTimer'),
-    _parent = (0, _symbol2.default)('parent'),
-    _createTime = (0, _symbol2.default)('createTime');
+    _parent = (0, _symbol2.default)('parent');
 
 var Timeline = function () {
   function Timeline(options, parent) {
@@ -8878,6 +8879,22 @@ var Timeline = function () {
       this[_parent] = parent;
     }
 
+    var nowtime = options.nowtime || _nowtime;
+    if (!parent) {
+      var createTime = nowtime();
+      Object.defineProperty(this, 'globalTime', {
+        get: function get() {
+          return nowtime() - createTime;
+        }
+      });
+    } else {
+      Object.defineProperty(this, 'globalTime', {
+        get: function get() {
+          return parent.currentTime;
+        }
+      });
+    }
+
     // timeMark records the reference points on timeline
     // Each time we change the playbackRate or currentTime or entropy
     // A new timeMark will be generated
@@ -8891,8 +8908,6 @@ var Timeline = function () {
       playbackRate: options.playbackRate,
       globalEntropy: 0
     }];
-
-    this[_createTime] = (0, _utils.nowtime)();
 
     if (this[_parent]) {
       this[_timeMark][0].globalEntropy = this[_parent].entropy;
@@ -9169,7 +9184,7 @@ var Timeline = function () {
 
         if (!isEntropy) {
           var endTime = startTime + delay;
-          if (delay === 0 || heading !== false && (to - from) * delay < 0 || from < endTime && endTime < to || from > endTime && endTime > to) {
+          if (delay === 0 || heading !== false && (to - from) * delay <= 0 || from <= endTime && endTime <= to || from >= endTime && endTime >= to) {
             handler();
             _this4.clearTimeout(id);
           }
@@ -9196,6 +9211,14 @@ var Timeline = function () {
       return entropy + Math.abs((this.globalEntropy - globalEntropy) * this.playbackRate);
     },
 
+    // get globalTime() {
+    //   if(this[_parent]) {
+    //     return this[_parent].currentTime;
+    //   }
+
+    //   return nowtime();
+    // }
+
     // change entropy will NOT cause currentTime changing but may influence the pass
     // and the future of the timeline. (It may change the result of seek***Time)
     // While entropy is set, all the marks behind will be droped
@@ -9210,16 +9233,7 @@ var Timeline = function () {
   }, {
     key: 'globalEntropy',
     get: function get() {
-      return this[_parent] ? this[_parent].entropy : (0, _utils.nowtime)() - this[_createTime];
-    }
-  }, {
-    key: 'globalTime',
-    get: function get() {
-      if (this[_parent]) {
-        return this[_parent].currentTime;
-      }
-
-      return (0, _utils.nowtime)();
+      return this[_parent] ? this[_parent].entropy : this.globalTime;
     }
   }, {
     key: 'playbackRate',
@@ -9893,35 +9907,26 @@ $export($export.S + $export.F * !__webpack_require__(84), 'Object', { defineProp
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-/* WEBPACK VAR INJECTION */(function(process) {
+
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-
-var _slicedToArray2 = __webpack_require__(159);
-
-var _slicedToArray3 = _interopRequireDefault(_slicedToArray2);
-
-exports.nowtime = nowtime;
+exports.createNowTime = createNowTime;
 exports.formatDelay = formatDelay;
+function createNowTime() {
+  var syncLocker = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
 
-function _interopRequireDefault(obj) {
-  return obj && obj.__esModule ? obj : { default: obj };
-}
-
-function nowtime() {
-  if (typeof performance !== 'undefined' && performance.now) {
-    return performance.now();
-  }if (typeof process !== 'undefined' && process.hrtime) {
-    var _process$hrtime = process.hrtime(),
-        _process$hrtime2 = (0, _slicedToArray3.default)(_process$hrtime, 2),
-        s = _process$hrtime2[0],
-        ns = _process$hrtime2[1];
-
-    return s * 1e3 + ns * 1e-6;
+  var nowtime = null;
+  if (Date.now) {
+    nowtime = Date.now;
+  } else {
+    nowtime = function nowtime() {
+      return new Date().getTime();
+    };
   }
-  return Date.now ? Date.now() : new Date().getTime();
+
+  return nowtime;
 }
 
 /*
@@ -9936,7 +9941,6 @@ function formatDelay(delay) {
   }
   return delay;
 }
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(20)))
 
 /***/ }),
 /* 190 */
@@ -13767,7 +13771,7 @@ function relative() {
               rv: val
             };
           } else {
-            val = parseFloat(val);
+            val = val ? parseFloat(val) : val;
           }
         }
         setter.call(this, val);
@@ -14753,6 +14757,11 @@ var BaseSprite = (_class = (_temp = _class2 = function (_BaseNode) {
         return t;
       }
       return transform;
+    }
+  }, {
+    key: 'animations',
+    get: function get() {
+      return this[_animations];
     }
   }, {
     key: 'xy',
@@ -16877,6 +16886,10 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = undefined;
 
+var _promise = __webpack_require__(194);
+
+var _promise2 = _interopRequireDefault(_promise);
+
 var _getPrototypeOf = __webpack_require__(253);
 
 var _getPrototypeOf2 = _interopRequireDefault(_getPrototypeOf);
@@ -16923,11 +16936,11 @@ var _assign2 = _interopRequireDefault(_assign);
 
 var _spriteAnimator = __webpack_require__(157);
 
-var _fastAnimationFrame = __webpack_require__(273);
-
 var _spriteMath = __webpack_require__(218);
 
 var _utils = __webpack_require__(227);
+
+var _fastAnimationFrame = __webpack_require__(273);
 
 function _interopRequireDefault(obj) {
   return obj && obj.__esModule ? obj : { default: obj };
@@ -17089,15 +17102,15 @@ var _default = function (_Animator) {
   }
 
   (0, _createClass3.default)(_default, [{
-    key: 'finish',
-    value: function finish() {
-      (0, _get3.default)(_default.prototype.__proto__ || (0, _getPrototypeOf2.default)(_default.prototype), 'finish', this).call(this);
-      (0, _fastAnimationFrame.cancelAnimationFrame)(this.requestId);
-      var sprite = this.target;
-      sprite.attr(this.frame);
-    }
-  }, {
     key: 'play',
+
+    // finish() {
+    //   super.finish();
+    //   cancelAnimationFrame(this.requestId);
+    //   const sprite = this.target;
+    //   sprite.attr(this.frame);
+    // }
+
     value: function play() {
       if (!this.target.parent || this.playState === 'running') {
         return;
@@ -17168,8 +17181,18 @@ var _default = function (_Animator) {
       // the animator is still running
       var sprite = this.target;
       return (0, _get3.default)(_default.prototype.__proto__ || (0, _getPrototypeOf2.default)(_default.prototype), 'finished', this).then(function () {
-        sprite.attr(_this2.frame);
-        (0, _fastAnimationFrame.cancelAnimationFrame)(_this2.requestId);
+        var that = _this2;
+        return new _promise2.default(function (resolve) {
+          (0, _fastAnimationFrame.requestAnimationFrame)(function update() {
+            sprite.attr(that.frame);
+            if (that.playState === 'finished') {
+              (0, _fastAnimationFrame.cancelAnimationFrame)(that.requestId);
+              resolve();
+            } else {
+              (0, _fastAnimationFrame.requestAnimationFrame)(update);
+            }
+          });
+        });
       });
     }
   }]);
@@ -17183,12 +17206,16 @@ exports.default = _default;
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-/* WEBPACK VAR INJECTION */(function(process, global) {
+/* WEBPACK VAR INJECTION */(function(global) {
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.cancelAnimationFrame = exports.requestAnimationFrame = undefined;
+exports.timeline = exports.cancelAnimationFrame = exports.requestAnimationFrame = undefined;
+
+var _slicedToArray2 = __webpack_require__(159);
+
+var _slicedToArray3 = _interopRequireDefault(_slicedToArray2);
 
 var _toConsumableArray2 = __webpack_require__(168);
 
@@ -17202,29 +17229,11 @@ var _map = __webpack_require__(174);
 
 var _map2 = _interopRequireDefault(_map);
 
-var _slicedToArray2 = __webpack_require__(159);
-
-var _slicedToArray3 = _interopRequireDefault(_slicedToArray2);
+var _spriteAnimator = __webpack_require__(157);
 
 function _interopRequireDefault(obj) {
   return obj && obj.__esModule ? obj : { default: obj };
 }
-
-/* eslint-disable no-undef */
-function nowtime() {
-  if (typeof performance !== 'undefined' && performance.now) {
-    return performance.now();
-  }if (typeof process !== 'undefined' && process.hrtime) {
-    var _process$hrtime = process.hrtime(),
-        _process$hrtime2 = (0, _slicedToArray3.default)(_process$hrtime, 2),
-        s = _process$hrtime2[0],
-        ns = _process$hrtime2[1];
-
-    return s * 1e3 + ns * 1e-6;
-  }
-  return Date.now ? Date.now() : new Date().getTime();
-}
-/* eslint-enable no-undef */
 
 var _requestAnimationFrame = void 0,
     _cancelAnimationFrame = void 0;
@@ -17232,7 +17241,7 @@ var _requestAnimationFrame = void 0,
 if (typeof global.requestAnimationFrame === 'undefined') {
   _requestAnimationFrame = function _requestAnimationFrame(fn) {
     return setTimeout(function () {
-      fn(nowtime());
+      fn(Date.now());
     }, 16);
   };
   _cancelAnimationFrame = function _cancelAnimationFrame(id) {
@@ -17246,13 +17255,20 @@ if (typeof global.requestAnimationFrame === 'undefined') {
 var steps = new _map2.default();
 var timerId = void 0;
 
+var currentTime = Date.now();
+
 var requestAnimationFrame = function requestAnimationFrame(step) {
   var id = (0, _symbol2.default)('requestId');
   steps.set(id, step);
 
   if (timerId == null) {
+    if (steps.size === 1) {
+      currentTime = Date.now();
+    }
     timerId = _requestAnimationFrame(function (t) {
-      timerId = null;[].concat((0, _toConsumableArray3.default)(steps)).forEach(function (_ref) {
+      timerId = null;
+      currentTime = Date.now();
+      [].concat((0, _toConsumableArray3.default)(steps)).forEach(function (_ref) {
         var _ref2 = (0, _slicedToArray3.default)(_ref, 2),
             id = _ref2[0],
             callback = _ref2[1];
@@ -17273,9 +17289,16 @@ var cancelAnimationFrame = function cancelAnimationFrame(id) {
   }
 };
 
+var timeline = new _spriteAnimator.Timeline({
+  nowtime: function nowtime() {
+    return steps.size ? currentTime : Date.now();
+  }
+});
+
 exports.requestAnimationFrame = requestAnimationFrame;
 exports.cancelAnimationFrame = cancelAnimationFrame;
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(20), __webpack_require__(8)))
+exports.timeline = timeline;
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(8)))
 
 /***/ }),
 /* 274 */
@@ -20122,7 +20145,7 @@ var Layer = function (_BaseNode) {
     _this[_updateSet] = new _set2.default();
     _this[_zOrder] = 0;
     _this[_tRecord] = []; // calculate FPS
-    _this[_timeline] = new _spriteAnimator.Timeline();
+    _this[_timeline] = new _spriteAnimator.Timeline(_fastAnimationFrame.timeline);
     _this[_renderDeferer] = null;
 
     _this[_node] = new _datanode2.default();
@@ -20642,7 +20665,8 @@ var Batch = function () {
           configurable: true,
           get: function get() {
             return Infinity;
-          }
+          },
+          set: function set(value) {}
         });
         node[_batch] = _this;
         _this[_batch].add(node);
@@ -20978,6 +21002,9 @@ var Group = (_class3 = (_temp2 = _class4 = function (_BaseSprite) {
           var parentY = evt.offsetY - this.originalRect[1] - borderWidth - padding[0] + scrollTop;
           // console.log(evt.parentX, evt.parentY)
 
+          var _parentX = evt.parentX,
+              _parentY = evt.parentY;
+
           evt.parentX = parentX;
           evt.parentY = parentY;
 
@@ -21003,6 +21030,8 @@ var Group = (_class3 = (_temp2 = _class4 = function (_BaseSprite) {
           evt.targetSprites = targetSprites;
           // stopDispatch can only terminate event in the same level
           evt.terminated = false;
+          evt.parentX = _parentX;
+          evt.parentY = _parentY;
           collisionState = isCollision;
         }
       }
@@ -25552,7 +25581,7 @@ let _default = class _default extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["
 /* 330 */
 /***/ (function(module) {
 
-module.exports = {"_from":"spritejs@^2.13.3","_id":"spritejs@2.13.3","_inBundle":false,"_integrity":"sha512-EtmZ2VwoUd1Coe7eSuN7aCRQCNlgn3MC9812T4xFektEJ4+RZtq/Q6LcvTmRNaEkg46L4M8MOVqKBi6p9pAIpg==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.13.3","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.13.3","saveSpec":null,"fetchSpec":"^2.13.3"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.13.3.tgz","_shasum":"ea585033ca8a784b7e1d1bce5ab0b02f11145d8b","_spec":"spritejs@^2.13.3","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.15.3"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^11.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.13.3"};
+module.exports = {"_from":"spritejs@^2.13.6","_id":"spritejs@2.13.6","_inBundle":false,"_integrity":"sha512-OdycqrtEFuDAPJu0+Mez79dRet1Gahcm0IDShCmla9/bqnBUudqiWkdzebNm+PZWMyQNd+dc4+XVNLTWGyrroA==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.13.6","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.13.6","saveSpec":null,"fetchSpec":"^2.13.6"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.13.6.tgz","_shasum":"a75868db8aba661616f00f0ef6ed26fdf916642b","_spec":"spritejs@^2.13.6","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.15.7"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^11.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.13.6"};
 
 /***/ }),
 /* 331 */
