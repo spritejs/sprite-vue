@@ -36,7 +36,7 @@ module.exports = function (env = {}) {
     entry: './src/index.js',
     output,
     resolve: {
-      // aliasFields: ['wxapp'],
+      aliasFields: ['browser', 'esnext'],
       alias: require('./build/alias'),
     },
 
