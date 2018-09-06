@@ -9744,7 +9744,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _sprite__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(296);
 /* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "Sprite", function() { return _sprite__WEBPACK_IMPORTED_MODULE_9__["default"]; });
 
-/* harmony import */ var _label__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(297);
+/* harmony import */ var _label__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(298);
 /* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "Label", function() { return _label__WEBPACK_IMPORTED_MODULE_10__["default"]; });
 
 /* harmony import */ var _layer__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(305);
@@ -12887,6 +12887,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "sortOrderedSprites", function() { return _utils__WEBPACK_IMPORTED_MODULE_0__["sortOrderedSprites"]; });
 
 /* harmony import */ var _decorators__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(271);
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "cachable", function() { return _decorators__WEBPACK_IMPORTED_MODULE_1__["cachable"]; });
+
 /* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "attr", function() { return _decorators__WEBPACK_IMPORTED_MODULE_1__["attr"]; });
 
 /* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "deprecate", function() { return _decorators__WEBPACK_IMPORTED_MODULE_1__["deprecate"]; });
@@ -13659,6 +13661,7 @@ module.exports = function isArrayish(obj) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "attr", function() { return attr; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "cachable", function() { return cachable; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "inherit", function() { return inherit; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "relative", function() { return relative; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "flow", function() { return flow; });
@@ -13686,7 +13689,7 @@ function attr(target, prop, descriptor) {
       return this.get(prop);
     };
   }
-  if (!target.__relative && !target.__inherit) {
+  if (!descriptor.__relative && !descriptor.__inherit) {
     descriptor.get = function () {
       var ret = _getter.call(this);
       if (ret == null) {
@@ -13694,8 +13697,7 @@ function attr(target, prop, descriptor) {
       }
       return ret;
     };
-  } else if (target.__relative) {
-    delete target.__relative;
+  } else if (descriptor.__relative) {
     // enable set default to user defined getter
     descriptor.get = function () {
       var ret = _getter.call(this);
@@ -13719,7 +13721,7 @@ function attr(target, prop, descriptor) {
             this[prop] = ret.rv;
             return this[prop];
           }
-          subject.clearCache();
+          subject.cache = null;
           if (subject[_attrAbsolute]) {
             return pv * ret.v;
           }
@@ -13739,7 +13741,7 @@ function attr(target, prop, descriptor) {
             this[prop] = ret.rv;
             return this[prop];
           }
-          subject.clearCache();
+          subject.cache = null;
           if (subject[_attrAbsolute]) {
             return _pv * ret.v;
           }
@@ -13749,7 +13751,6 @@ function attr(target, prop, descriptor) {
       return ret;
     };
   } else {
-    delete target.__inherit;
     // enable set default to user defined getter
     descriptor.get = function () {
       var ret = _getter.call(this);
@@ -13764,7 +13765,7 @@ function attr(target, prop, descriptor) {
           this[prop] = 'inherit';
           return this[prop];
         }
-        subject.clearCache();
+        subject.cache = null;
         return ret.pv;
       }
       return ret;
@@ -13772,9 +13773,10 @@ function attr(target, prop, descriptor) {
   }
 
   var _setter = descriptor.set;
+  var _clearCache = !descriptor.__cachable;
+
   descriptor.set = function (val) {
     var subject = this.subject;
-    this.__clearCacheTag = false;
     this.__updateTag = false;
     this.__reflowTag = false;
     _setter.call(this, val);
@@ -13788,25 +13790,31 @@ function attr(target, prop, descriptor) {
       subject.__lastLayout = offsetSize;
     }
     if (this.subject && this.__updateTag) {
-      subject.forceUpdate(this.__clearCacheTag);
+      subject.forceUpdate(_clearCache);
       if (this.__reflowTag) {
         subject.reflow();
       }
     }
     // delete this.__reflowTag;
     // delete this.__updateTag;
-    // delete this.__clearCacheTag;
   };
   return descriptor;
 }
 
+// after attr
+function cachable(target, prop, descriptor) {
+  descriptor.__cachable = true;
+  return descriptor;
+}
+
+// after attr
 function inherit() {
   var defaultValue = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
 
   return function (target, prop, descriptor) {
     if (descriptor.set) {
       var setter = descriptor.set;
-      target.__inherit = true;
+      descriptor.__inherit = true;
 
       descriptor.set = function (val) {
         if (typeof val === 'string') {
@@ -13829,6 +13837,7 @@ function inherit() {
   };
 }
 
+// after attr
 // relative -> width | height
 function relative() {
   var type = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'width';
@@ -13836,7 +13845,7 @@ function relative() {
   return function (target, prop, descriptor) {
     if (descriptor.set) {
       var setter = descriptor.set;
-      target.__relative = true;
+      descriptor.__relative = true;
 
       descriptor.set = function (val) {
         if (typeof val === 'string') {
@@ -13975,6 +13984,7 @@ function deprecate() {
   return decorator.apply(undefined, args);
 }
 
+// before attr
 function parseValue() {
   for (var _len3 = arguments.length, parsers = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
     parsers[_key3] = arguments[_key3];
@@ -14141,20 +14151,26 @@ function findColor(context, sprite, prop) {
 }
 
 var contextPool = [],
-    maxPollSize = 20;
+    maxPollSize = 20,
+    maxCreated = 50;
 
 var cacheContextPool = {
+  created: 0,
   get: function get(context) {
     if (contextPool.length > 0) {
       return contextPool.pop();
     }
 
-    var canvas = context.canvas;
-    if (!canvas || !canvas.cloneNode) {
-      return;
+    var created = this.created;
+    if (created < maxCreated) {
+      var canvas = context.canvas;
+      if (!canvas || !canvas.cloneNode) {
+        return;
+      }
+      var copied = canvas.cloneNode();
+      this.created++;
+      return copied.getContext('2d');
     }
-    var copied = canvas.cloneNode();
-    return copied.getContext('2d');
   },
   put: function put() {
     for (var _len = arguments.length, contexts = Array(_len), _key = 0; _key < _len; _key++) {
@@ -14243,7 +14259,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-var _desc, _value, _class, _class2, _temp;
+var _dec, _desc, _value, _class, _class2, _temp;
 
 var _applyDecoratedDescriptor = __webpack_require__(285);
 
@@ -14265,7 +14281,7 @@ var _attr = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_16___default()
     _flow = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_16___default()('flow'),
     _changeStateAction = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_16___default()('changeStateAction');
 
-var BaseSprite = (_class = (_temp = _class2 = function (_BaseNode) {
+var BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_19__["deprecate"])('Instead use sprite.cache = null'), (_class = (_temp = _class2 = function (_BaseNode) {
   babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_15___default()(BaseSprite, _BaseNode);
 
   /**
@@ -14284,7 +14300,6 @@ var BaseSprite = (_class = (_temp = _class2 = function (_BaseNode) {
     _this[_animations] = new babel_runtime_core_js_set__WEBPACK_IMPORTED_MODULE_9___default.a();
     _this[_cachePriority] = 0;
     _this[_flow] = {};
-    _this.__cachePolicyThreshold = 6;
 
     if (attr) {
       _this.attr(attr);
@@ -14614,12 +14629,7 @@ var BaseSprite = (_class = (_temp = _class2 = function (_BaseNode) {
   }, {
     key: 'clearCache',
     value: function clearCache() {
-      this[_cachePriority] = 0;
       this.cache = null;
-      if (this.parent && this.parent.cache) {
-        this.parent[_cachePriority] = 0;
-        this.parent.cache = null;
-      }
     }
   }, {
     key: 'remove',
@@ -14639,7 +14649,7 @@ var BaseSprite = (_class = (_temp = _class2 = function (_BaseNode) {
       var clearCache = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
 
       if (clearCache) {
-        this.clearCache();
+        this.cache = null;
       }
       var parent = this.parent;
       if (parent) {
@@ -14794,24 +14804,20 @@ var BaseSprite = (_class = (_temp = _class2 = function (_BaseNode) {
       var drawingContext = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : this.context;
 
       var bound = this.originalRect;
-      var cachableContext = this.cache;
+      var cachableContext = !this.isVirtual && this.cache;
 
       var filter = this.attr('filter'),
           shadow = this.attr('shadow');
 
-      // filter & shadow require cachableContext
-      if (!cachableContext && (filter || shadow || this.cachePriority > this.__cachePolicyThreshold)) {
+      if (cachableContext !== false && !cachableContext) {
         cachableContext = _helpers_render__WEBPACK_IMPORTED_MODULE_24__["cacheContextPool"].get(drawingContext);
         if (cachableContext) {
           // +2 to solve 1px problem
           cachableContext.canvas.width = Math.ceil(bound[2]) + 2;
           cachableContext.canvas.height = Math.ceil(bound[3]) + 2;
-        } else {
-          this.__cachePolicyThreshold = Infinity;
         }
       }
 
-      this[_cachePriority] = Math.min(this[_cachePriority] + 1, 10);
       var evtArgs = { context: drawingContext, cacheContext: cachableContext, target: this, renderTime: t, fromCache: !!this.cache };
 
       drawingContext.save();
@@ -14951,15 +14957,6 @@ var BaseSprite = (_class = (_temp = _class2 = function (_BaseNode) {
       drawingContext.translate(borderWidth + padding[3], borderWidth + padding[0]);
 
       return true;
-    }
-  }, {
-    key: 'cachePriority',
-    get: function get() {
-      if (this.isVirtual) return -1;
-      return this[_cachePriority];
-    },
-    set: function set(priority) {
-      this[_cachePriority] = priority;
     }
   }, {
     key: 'layer',
@@ -15280,13 +15277,29 @@ var BaseSprite = (_class = (_temp = _class2 = function (_BaseNode) {
   }, {
     key: 'cache',
     set: function set(context) {
+      if (context == null) {
+        this[_cachePriority] = 0;
+        if (this.parent && this.parent.cache) {
+          this.parent.cache = null;
+        }
+      }
       if (this.cacheContext && context !== this.cacheContext) {
         _helpers_render__WEBPACK_IMPORTED_MODULE_24__["cacheContextPool"].put(this.cacheContext);
       }
       this.cacheContext = context;
     },
     get: function get() {
-      return this.cacheContext;
+      var filter = this.attr('filter'),
+          shadow = this.attr('shadow'),
+          _contentSize2 = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_4___default()(this.contentSize, 2),
+          w = _contentSize2[0],
+          h = _contentSize2[1];
+
+
+      if (filter || shadow || this[_cachePriority]++ >= 6 && w * h >= 2500) {
+        return this.cacheContext;
+      }
+      return false;
     }
   }, {
     key: 'needRender',
@@ -15340,7 +15353,6 @@ var BaseSprite = (_class = (_temp = _class2 = function (_BaseNode) {
           _this6.Attr.prototype.__attributeNames.add(prop);
           babel_runtime_core_js_object_define_property__WEBPACK_IMPORTED_MODULE_1___default()(_this6.Attr.prototype, prop, {
             set: function set(val) {
-              this.__clearCacheTag = false;
               this.__updateTag = false;
               this.__reflowTag = false;
               handler(this, val);
@@ -15354,14 +15366,13 @@ var BaseSprite = (_class = (_temp = _class2 = function (_BaseNode) {
                 this.subject.__lastLayout = offsetSize;
               }
               if (this.subject && this.__updateTag) {
-                this.subject.forceUpdate(this.__clearCacheTag);
+                this.subject.forceUpdate(true);
                 if (this.__reflowTag) {
                   this.subject.reflow();
                 }
               }
               // delete this.__reflowTag;
               // delete this.__updateTag;
-              // delete this.__clearCacheTag;
             },
 
             get: getter
@@ -15393,7 +15404,7 @@ var BaseSprite = (_class = (_temp = _class2 = function (_BaseNode) {
   }]);
 
   return BaseSprite;
-}(_basenode__WEBPACK_IMPORTED_MODULE_21__["default"]), _class2.Attr = _attr__WEBPACK_IMPORTED_MODULE_20__["default"], _temp), (_applyDecoratedDescriptor(_class.prototype, 'xy', [_utils__WEBPACK_IMPORTED_MODULE_19__["absolute"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'xy'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'attrSize', [_utils__WEBPACK_IMPORTED_MODULE_19__["absolute"], _utils__WEBPACK_IMPORTED_MODULE_19__["flow"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'attrSize'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'boxOffsetSize', [_utils__WEBPACK_IMPORTED_MODULE_19__["absolute"], _utils__WEBPACK_IMPORTED_MODULE_19__["flow"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'boxOffsetSize'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'contentSize', [_utils__WEBPACK_IMPORTED_MODULE_19__["flow"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'contentSize'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'clientSize', [_utils__WEBPACK_IMPORTED_MODULE_19__["flow"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'clientSize'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'offsetSize', [_utils__WEBPACK_IMPORTED_MODULE_19__["flow"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'offsetSize'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'originalRect', [_utils__WEBPACK_IMPORTED_MODULE_19__["flow"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'originalRect'), _class.prototype)), _class);
+}(_basenode__WEBPACK_IMPORTED_MODULE_21__["default"]), _class2.Attr = _attr__WEBPACK_IMPORTED_MODULE_20__["default"], _temp), (_applyDecoratedDescriptor(_class.prototype, 'xy', [_utils__WEBPACK_IMPORTED_MODULE_19__["absolute"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'xy'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'attrSize', [_utils__WEBPACK_IMPORTED_MODULE_19__["absolute"], _utils__WEBPACK_IMPORTED_MODULE_19__["flow"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'attrSize'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'boxOffsetSize', [_utils__WEBPACK_IMPORTED_MODULE_19__["absolute"], _utils__WEBPACK_IMPORTED_MODULE_19__["flow"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'boxOffsetSize'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'contentSize', [_utils__WEBPACK_IMPORTED_MODULE_19__["flow"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'contentSize'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'clientSize', [_utils__WEBPACK_IMPORTED_MODULE_19__["flow"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'clientSize'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'offsetSize', [_utils__WEBPACK_IMPORTED_MODULE_19__["flow"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'offsetSize'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'originalRect', [_utils__WEBPACK_IMPORTED_MODULE_19__["flow"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'originalRect'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'clearCache', [_dec], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'clearCache'), _class.prototype)), _class));
 
 
 
@@ -15840,7 +15851,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-var _dec, _dec2, _dec3, _dec4, _dec5, _dec6, _dec7, _dec8, _dec9, _dec10, _dec11, _dec12, _dec13, _dec14, _dec15, _dec16, _dec17, _dec18, _dec19, _dec20, _dec21, _desc, _value, _class;
+var _dec, _dec2, _dec3, _dec4, _dec5, _dec6, _dec7, _dec8, _dec9, _dec10, _dec11, _dec12, _dec13, _dec14, _dec15, _dec16, _dec17, _dec18, _dec19, _dec20, _dec21, _dec22, _desc, _value, _class;
 
 var _applyDecoratedDescriptor = __webpack_require__(285);
 
@@ -15854,7 +15865,7 @@ var _attr = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_13___default()
     _default = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_13___default()('default'),
     _props = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_13___default()('props');
 
-var SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue"])(_utils__WEBPACK_IMPORTED_MODULE_16__["parseStringFloat"], _utils__WEBPACK_IMPORTED_MODULE_16__["oneOrTwoValues"]), _dec2 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["relative"])('width'), _dec3 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["relative"])('height'), _dec4 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["relative"])('width'), _dec5 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["relative"])('height'), _dec6 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue"])(_utils__WEBPACK_IMPORTED_MODULE_16__["parseStringInt"]), _dec7 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue"])(_utils__WEBPACK_IMPORTED_MODULE_16__["parseColorString"]), _dec8 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["relative"])('width'), _dec9 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["relative"])('height'), _dec10 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["relative"])('width'), _dec11 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["relative"])('height'), _dec12 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue"])(_utils__WEBPACK_IMPORTED_MODULE_16__["parseStringInt"]), _dec13 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue"])(_utils__WEBPACK_IMPORTED_MODULE_16__["parseStringInt"], _utils__WEBPACK_IMPORTED_MODULE_16__["fourValuesShortCut"]), _dec14 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue"])(parseFloat), _dec15 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue"])(parseFloat), _dec16 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue"])(_utils__WEBPACK_IMPORTED_MODULE_16__["parseStringTransform"]), _dec17 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue"])(parseFloat), _dec18 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue"])(_utils__WEBPACK_IMPORTED_MODULE_16__["parseStringFloat"], _utils__WEBPACK_IMPORTED_MODULE_16__["oneOrTwoValues"]), _dec19 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["deprecate"])('Instead use attr.gradients.'), _dec20 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue"])(parseFloat), _dec21 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue"])(parseFloat), (_class = function () {
+var SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["deprecate"])('You can remove this call.'), _dec2 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue"])(_utils__WEBPACK_IMPORTED_MODULE_16__["parseStringFloat"], _utils__WEBPACK_IMPORTED_MODULE_16__["oneOrTwoValues"]), _dec3 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["relative"])('width'), _dec4 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["relative"])('height'), _dec5 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["relative"])('width'), _dec6 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["relative"])('height'), _dec7 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue"])(_utils__WEBPACK_IMPORTED_MODULE_16__["parseStringInt"]), _dec8 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue"])(_utils__WEBPACK_IMPORTED_MODULE_16__["parseColorString"]), _dec9 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["relative"])('width'), _dec10 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["relative"])('height'), _dec11 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["relative"])('width'), _dec12 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["relative"])('height'), _dec13 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue"])(_utils__WEBPACK_IMPORTED_MODULE_16__["parseStringInt"]), _dec14 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue"])(_utils__WEBPACK_IMPORTED_MODULE_16__["parseStringInt"], _utils__WEBPACK_IMPORTED_MODULE_16__["fourValuesShortCut"]), _dec15 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue"])(parseFloat), _dec16 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue"])(parseFloat), _dec17 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue"])(_utils__WEBPACK_IMPORTED_MODULE_16__["parseStringTransform"]), _dec18 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue"])(parseFloat), _dec19 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue"])(_utils__WEBPACK_IMPORTED_MODULE_16__["parseStringFloat"], _utils__WEBPACK_IMPORTED_MODULE_16__["oneOrTwoValues"]), _dec20 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["deprecate"])('Instead use attr.gradients.'), _dec21 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue"])(parseFloat), _dec22 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue"])(parseFloat), (_class = function () {
   function SpriteAttr(subject) {
     babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_11___default()(this, SpriteAttr);
 
@@ -15908,17 +15919,6 @@ var SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue
       filter: '', // filter: {blur, ...}
       shadow: '', // shadow: {color = 'rgba(0,0,0,1)', blur = 1[, offset]}
       bgimage: ''
-    }, {
-      pos: function pos() {
-        return [this.x, this.y];
-      },
-      size: function size() {
-        return [this.width, this.height];
-      },
-      linearGradients: function linearGradients() {
-        /* istanbul ignore next  */
-        return this.gradients;
-      }
     });
     this[_temp] = new babel_runtime_core_js_map__WEBPACK_IMPORTED_MODULE_10___default.a(); // save non-serialized values
     this.__extendAttributes = new babel_runtime_core_js_set__WEBPACK_IMPORTED_MODULE_9___default.a();
@@ -15992,7 +15992,6 @@ var SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue
   }, {
     key: 'clearCache',
     value: function clearCache() {
-      this.__clearCacheTag = true;
       return this;
     }
   }, {
@@ -16166,7 +16165,6 @@ var SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue
   }, {
     key: 'display',
     set: function set(val) {
-      this.clearCache();
       this.set('display', val);
     }
   }, {
@@ -16203,11 +16201,13 @@ var SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue
 
       this.x = x;
       this.y = y;
+    },
+    get: function get() {
+      return [this.x, this.y];
     }
   }, {
     key: 'bgcolor',
     set: function set(val) {
-      this.clearCache();
       this.set('bgcolor', val);
     }
   }, {
@@ -16218,25 +16218,21 @@ var SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue
   }, {
     key: 'width',
     set: function set(val) {
-      this.clearCache();
       this.set('width', val);
     }
   }, {
     key: 'height',
     set: function set(val) {
-      this.clearCache();
       this.set('height', val);
     }
   }, {
     key: 'layoutWidth',
     set: function set(val) {
-      this.clearCache();
       this.set('layoutWidth', val);
     }
   }, {
     key: 'layoutHeight',
     set: function set(val) {
-      this.clearCache();
       this.set('layoutHeight', val);
     }
   }, {
@@ -16253,11 +16249,13 @@ var SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue
 
       this.width = width;
       this.height = height;
+    },
+    get: function get() {
+      return [this.width, this.height];
     }
   }, {
     key: 'border',
     set: function set(val) {
-      this.clearCache();
       if (val == null) {
         this.set('border', null);
         return;
@@ -16285,25 +16283,21 @@ var SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue
   }, {
     key: 'padding',
     set: function set(val) {
-      this.clearCache();
       this.set('padding', val);
     }
   }, {
     key: 'borderRadius',
     set: function set(val) {
-      this.clearCache();
       this.set('borderRadius', val);
     }
   }, {
     key: 'boxSizing',
     set: function set(val) {
-      this.clearCache();
       this.set('boxSizing', val);
     }
   }, {
     key: 'dashOffset',
     set: function set(val) {
-      this.clearCache();
       this.set('dashOffset', val);
     }
 
@@ -16445,6 +16439,9 @@ var SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue
     key: 'linearGradients',
     set: function set(val) /* istanbul ignore next  */{
       this.gradients = val;
+    },
+    get: function get() {
+      return this.gradients;
     }
 
     /**
@@ -16464,7 +16461,6 @@ var SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue
   }, {
     key: 'gradients',
     set: function set(val) {
-      this.clearCache();
       this.set('gradients', val);
     }
   }, {
@@ -16544,7 +16540,6 @@ var SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue
   }, {
     key: 'bgimage',
     set: function set(val) {
-      this.clearCache();
       if (val && val.clip9) val.clip9 = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["fourValuesShortCut"])(val.clip9);
       if (val && !val.image && this.subject.loadBgImage) {
         val = this.subject.loadBgImage(val);
@@ -16554,7 +16549,7 @@ var SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue
   }, {
     key: 'states',
     set: function set(val) {
-      this.set('states', val);
+      this.quietSet('states', val);
     }
   }, {
     key: 'actions',
@@ -16578,9 +16573,9 @@ var SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue
             value[key] = babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_8___default()({}, v.action);
           }
         });
-        this.set('actions', value);
+        this.quietSet('actions', value);
       } else {
-        this.set('actions', val);
+        this.quietSet('actions', val);
       }
     }
   }, {
@@ -16588,7 +16583,7 @@ var SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue
     set: function set(val) {
       var oldState = this.state;
       if (oldState !== val) {
-        this.set('state', val);
+        this.quietSet('state', val);
         var states = this.states;
         var action = null;
         if (states) {
@@ -16642,7 +16637,7 @@ var SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["parseValue
   }]);
 
   return SpriteAttr;
-}(), (_applyDecoratedDescriptor(_class.prototype, 'id', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'id'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'name', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'name'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'anchor', [_dec, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'anchor'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'display', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'display'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'layoutX', [_dec2, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'layoutX'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'layoutY', [_dec3, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'layoutY'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'x', [_dec4, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'x'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'y', [_dec5, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'y'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'pos', [_dec6, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'pos'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'bgcolor', [_dec7, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'bgcolor'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'opacity', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'opacity'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'width', [_dec8, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'width'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'height', [_dec9, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'height'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'layoutWidth', [_dec10, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'layoutWidth'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'layoutHeight', [_dec11, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'layoutHeight'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'size', [_dec12, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'size'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'border', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'border'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'padding', [_dec13, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'padding'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'borderRadius', [_dec14, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'borderRadius'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'boxSizing', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'boxSizing'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'dashOffset', [_dec15, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'dashOffset'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'transform', [_dec16, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'transform'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'transformOrigin', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'transformOrigin'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'rotate', [_dec17, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'rotate'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'scale', [_dec18, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'scale'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'translate', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'translate'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'skew', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'skew'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'zIndex', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'zIndex'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'linearGradients', [_dec19, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'linearGradients'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'gradients', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'gradients'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'offsetPath', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'offsetPath'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'offsetDistance', [_dec20, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'offsetDistance'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'offsetRotate', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'offsetRotate'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'filter', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'filter'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'shadow', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'shadow'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'flex', [_dec21, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'flex'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'order', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'order'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'position', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'position'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'alignSelf', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'alignSelf'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'margin', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'margin'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'bgimage', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'bgimage'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'states', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'states'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'actions', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'actions'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'state', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'state'), _class.prototype)), _class));
+}(), (_applyDecoratedDescriptor(_class.prototype, 'clearCache', [_dec], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'clearCache'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'id', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'id'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'name', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'name'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'anchor', [_dec2, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _utils__WEBPACK_IMPORTED_MODULE_16__["cachable"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'anchor'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'display', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'display'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'layoutX', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _dec3, _utils__WEBPACK_IMPORTED_MODULE_16__["cachable"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'layoutX'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'layoutY', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _dec4, _utils__WEBPACK_IMPORTED_MODULE_16__["cachable"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'layoutY'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'x', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _dec5, _utils__WEBPACK_IMPORTED_MODULE_16__["cachable"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'x'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'y', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _dec6, _utils__WEBPACK_IMPORTED_MODULE_16__["cachable"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'y'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'pos', [_dec7, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'pos'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'bgcolor', [_dec8, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'bgcolor'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'opacity', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _utils__WEBPACK_IMPORTED_MODULE_16__["cachable"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'opacity'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'width', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _dec9], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'width'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'height', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _dec10], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'height'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'layoutWidth', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _dec11], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'layoutWidth'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'layoutHeight', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _dec12], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'layoutHeight'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'size', [_dec13, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'size'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'border', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'border'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'padding', [_dec14, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'padding'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'borderRadius', [_dec15, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'borderRadius'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'boxSizing', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'boxSizing'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'dashOffset', [_dec16, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'dashOffset'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'transform', [_dec17, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _utils__WEBPACK_IMPORTED_MODULE_16__["cachable"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'transform'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'transformOrigin', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _utils__WEBPACK_IMPORTED_MODULE_16__["cachable"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'transformOrigin'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'rotate', [_dec18, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _utils__WEBPACK_IMPORTED_MODULE_16__["cachable"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'rotate'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'scale', [_dec19, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _utils__WEBPACK_IMPORTED_MODULE_16__["cachable"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'scale'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'translate', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _utils__WEBPACK_IMPORTED_MODULE_16__["cachable"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'translate'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'skew', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _utils__WEBPACK_IMPORTED_MODULE_16__["cachable"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'skew'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'zIndex', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _utils__WEBPACK_IMPORTED_MODULE_16__["cachable"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'zIndex'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'linearGradients', [_dec20, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'linearGradients'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'gradients', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'gradients'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'offsetPath', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _utils__WEBPACK_IMPORTED_MODULE_16__["cachable"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'offsetPath'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'offsetDistance', [_dec21, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _utils__WEBPACK_IMPORTED_MODULE_16__["cachable"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'offsetDistance'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'offsetRotate', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _utils__WEBPACK_IMPORTED_MODULE_16__["cachable"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'offsetRotate'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'filter', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _utils__WEBPACK_IMPORTED_MODULE_16__["cachable"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'filter'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'shadow', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _utils__WEBPACK_IMPORTED_MODULE_16__["cachable"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'shadow'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'flex', [_dec22, _utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _utils__WEBPACK_IMPORTED_MODULE_16__["cachable"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'flex'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'order', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _utils__WEBPACK_IMPORTED_MODULE_16__["cachable"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'order'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'position', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _utils__WEBPACK_IMPORTED_MODULE_16__["cachable"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'position'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'alignSelf', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _utils__WEBPACK_IMPORTED_MODULE_16__["cachable"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'alignSelf'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'margin', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"], _utils__WEBPACK_IMPORTED_MODULE_16__["cachable"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'margin'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'bgimage', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'bgimage'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'states', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'states'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'actions', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'actions'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'state', [_utils__WEBPACK_IMPORTED_MODULE_16__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_0___default()(_class.prototype, 'state'), _class.prototype)), _class));
 
 
 /* harmony default export */ __webpack_exports__["default"] = (SpriteAttr);
@@ -17776,14 +17771,14 @@ Object(_nodetype__WEBPACK_IMPORTED_MODULE_5__["registerNodeType"])('data', DataN
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return Sprite; });
-/* harmony import */ var babel_runtime_core_js_json_stringify__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(46);
-/* harmony import */ var babel_runtime_core_js_json_stringify__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_core_js_json_stringify__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(230);
-/* harmony import */ var babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(223);
-/* harmony import */ var babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_2__);
-/* harmony import */ var babel_runtime_core_js_map__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(235);
-/* harmony import */ var babel_runtime_core_js_map__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_core_js_map__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(230);
+/* harmony import */ var babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(223);
+/* harmony import */ var babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var babel_runtime_core_js_map__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(235);
+/* harmony import */ var babel_runtime_core_js_map__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_core_js_map__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var babel_runtime_helpers_set__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(297);
+/* harmony import */ var babel_runtime_helpers_set__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_helpers_set__WEBPACK_IMPORTED_MODULE_3__);
 /* harmony import */ var babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(279);
 /* harmony import */ var babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_4__);
 /* harmony import */ var babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(124);
@@ -17804,7 +17799,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _basesprite__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(273);
 /* harmony import */ var _filters__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(294);
 /* harmony import */ var _nodetype__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(293);
-/* harmony import */ var _helpers_render__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(272);
 
 
 
@@ -17821,7 +17815,6 @@ __webpack_require__.r(__webpack_exports__);
 var _desc, _value, _class, _desc2, _value2, _class2, _class3, _temp;
 
 var _applyDecoratedDescriptor = __webpack_require__(285);
-
 
 
 
@@ -17943,7 +17936,7 @@ var Sprite = (_class2 = (_temp = _class3 = function (_BaseSprite) {
 
     var _this2 = babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_9___default()(this, (Sprite.__proto__ || babel_runtime_core_js_object_get_prototype_of__WEBPACK_IMPORTED_MODULE_6___default()(Sprite)).call(this));
 
-    _this2[_texturesCache] = new babel_runtime_core_js_map__WEBPACK_IMPORTED_MODULE_3___default.a();
+    _this2[_texturesCache] = new babel_runtime_core_js_map__WEBPACK_IMPORTED_MODULE_2___default.a();
     if (attr) {
       _this2.attr(attr);
     }
@@ -17979,10 +17972,10 @@ var Sprite = (_class2 = (_temp = _class3 = function (_BaseSprite) {
           evt.targetTextures = [];
 
           var _attr = this.attr('anchor'),
-              _attr2 = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_2___default()(_attr, 2),
+              _attr2 = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_1___default()(_attr, 2),
               anchorX = _attr2[0],
               anchorY = _attr2[1],
-              _contentSize = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_2___default()(this.contentSize, 2),
+              _contentSize = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_1___default()(this.contentSize, 2),
               width = _contentSize[0],
               height = _contentSize[1];
 
@@ -17990,8 +17983,8 @@ var Sprite = (_class2 = (_temp = _class3 = function (_BaseSprite) {
           offsetY += height * anchorY;
 
           textures.forEach(function (texture) {
-            var _ref = texture.rect || [0, 0].concat(babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_1___default()(_this4.innerSize)),
-                _ref2 = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_2___default()(_ref, 4),
+            var _ref = texture.rect || [0, 0].concat(babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_0___default()(_this4.innerSize)),
+                _ref2 = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_1___default()(_ref, 4),
                 x = _ref2[0],
                 y = _ref2[1],
                 w = _ref2[2],
@@ -18007,23 +18000,43 @@ var Sprite = (_class2 = (_temp = _class3 = function (_BaseSprite) {
       }
       return false;
     }
+
+    // set cache(context) {
+    //   if(context == null) {
+    //     cacheContextPool.put(...this[_texturesCache].values());
+    //     this[_texturesCache].clear();
+    //     return;
+    //   }
+    //   const key = JSON.stringify(this.textures),
+    //     cacheMap = this[_texturesCache];
+
+    //   if(!cacheMap.has(key)) {
+    //     cacheMap.set(key, context);
+    //   }
+    // }
+
+    // get cache() {
+    //   const key = JSON.stringify(this.textures),
+    //     cacheMap = this[_texturesCache];
+    //   if(cacheMap.has(key)) {
+    //     return cacheMap.get(key);
+    //   }
+    //   return null;
+    // }
+
   }, {
     key: 'render',
     value: function render(t, drawingContext) {
       var _this5 = this;
 
       babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_4___default()(Sprite.prototype.__proto__ || babel_runtime_core_js_object_get_prototype_of__WEBPACK_IMPORTED_MODULE_6___default()(Sprite.prototype), 'render', this).call(this, t, drawingContext);
-      var bg = this.attr('bgcolor') || this.attr('gradients').bgcolor;
-      if (!bg && this.textures.length <= 1) {
-        this.cachePriority = 0;
-      }
       var textures = this.textures;
       var cliped = false;
       if (this.images && this.images.length) {
         textures.forEach(function (texture, i) {
           var img = _this5.images[i];
 
-          var _contentSize2 = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_2___default()(_this5.contentSize, 2),
+          var _contentSize2 = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_1___default()(_this5.contentSize, 2),
               w = _contentSize2[0],
               h = _contentSize2[1];
 
@@ -18049,14 +18062,14 @@ var Sprite = (_class2 = (_temp = _class3 = function (_BaseSprite) {
             drawingContext.filter = _filters__WEBPACK_IMPORTED_MODULE_14__["default"].compile(texture.filter);
 
             if (srcRect) {
-              drawingContext.drawImage.apply(drawingContext, [img].concat(babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_1___default()(srcRect), [sx * imgRect[0] + rect[0], sy * imgRect[1] + rect[1], sx * srcRect[2], sy * srcRect[3]]));
+              drawingContext.drawImage.apply(drawingContext, [img].concat(babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_0___default()(srcRect), [sx * imgRect[0] + rect[0], sy * imgRect[1] + rect[1], sx * srcRect[2], sy * srcRect[3]]));
             } else {
               drawingContext.drawImage(img, sx * imgRect[0] + rect[0], sy * imgRect[1] + rect[1], sx * img.width, sy * img.height);
             }
           } else if (srcRect) {
-            drawingContext.drawImage.apply(drawingContext, [img].concat(babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_1___default()(srcRect), babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_1___default()(rect)));
+            drawingContext.drawImage.apply(drawingContext, [img].concat(babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_0___default()(srcRect), babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_0___default()(rect)));
           } else {
-            drawingContext.drawImage.apply(drawingContext, [img].concat(babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_1___default()(rect)));
+            drawingContext.drawImage.apply(drawingContext, [img].concat(babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_0___default()(rect)));
           }
 
           drawingContext.restore();
@@ -18085,7 +18098,7 @@ var Sprite = (_class2 = (_temp = _class3 = function (_BaseSprite) {
   }, {
     key: 'contentSize',
     get: function get() {
-      var _attrSize = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_2___default()(this.attrSize, 2),
+      var _attrSize = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_1___default()(this.attrSize, 2),
           width = _attrSize[0],
           height = _attrSize[1];
 
@@ -18112,26 +18125,15 @@ var Sprite = (_class2 = (_temp = _class3 = function (_BaseSprite) {
     }
   }, {
     key: 'cache',
-    set: function set(context) {
-      if (context == null) {
-        _helpers_render__WEBPACK_IMPORTED_MODULE_16__["cacheContextPool"].put.apply(_helpers_render__WEBPACK_IMPORTED_MODULE_16__["cacheContextPool"], babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_1___default()(this[_texturesCache].values()));
-        this[_texturesCache].clear();
-        return;
-      }
-      var key = babel_runtime_core_js_json_stringify__WEBPACK_IMPORTED_MODULE_0___default()(this.textures),
-          cacheMap = this[_texturesCache];
-
-      if (!cacheMap.has(key)) {
-        cacheMap.set(key, context);
-      }
-    },
     get: function get() {
-      var key = babel_runtime_core_js_json_stringify__WEBPACK_IMPORTED_MODULE_0___default()(this.textures),
-          cacheMap = this[_texturesCache];
-      if (cacheMap.has(key)) {
-        return cacheMap.get(key);
+      var bg = this.attr('bgcolor') || this.attr('gradients').bgcolor;
+      if (!bg && this.textures.length <= 1) {
+        return false;
       }
-      return null;
+      return babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_4___default()(Sprite.prototype.__proto__ || babel_runtime_core_js_object_get_prototype_of__WEBPACK_IMPORTED_MODULE_6___default()(Sprite.prototype), 'cache', this);
+    },
+    set: function set(context) {
+      babel_runtime_helpers_set__WEBPACK_IMPORTED_MODULE_3___default()(Sprite.prototype.__proto__ || babel_runtime_core_js_object_get_prototype_of__WEBPACK_IMPORTED_MODULE_6___default()(Sprite.prototype), 'cache', context, this);
     }
   }]);
 
@@ -18144,6 +18146,47 @@ Object(_nodetype__WEBPACK_IMPORTED_MODULE_15__["registerNodeType"])('sprite', Sp
 
 /***/ }),
 /* 297 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+exports.__esModule = true;
+
+var _getPrototypeOf = __webpack_require__(275);
+
+var _getPrototypeOf2 = _interopRequireDefault(_getPrototypeOf);
+
+var _getOwnPropertyDescriptor = __webpack_require__(124);
+
+var _getOwnPropertyDescriptor2 = _interopRequireDefault(_getOwnPropertyDescriptor);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.default = function set(object, property, value, receiver) {
+  var desc = (0, _getOwnPropertyDescriptor2.default)(object, property);
+
+  if (desc === undefined) {
+    var parent = (0, _getPrototypeOf2.default)(object);
+
+    if (parent !== null) {
+      set(parent, property, value, receiver);
+    }
+  } else if ("value" in desc && desc.writable) {
+    desc.value = value;
+  } else {
+    var setter = desc.set;
+
+    if (setter !== undefined) {
+      setter.call(receiver, value);
+    }
+  }
+
+  return value;
+};
+
+/***/ }),
+/* 298 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -18163,20 +18206,18 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_5__);
 /* harmony import */ var babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(278);
 /* harmony import */ var babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_6__);
-/* harmony import */ var babel_runtime_helpers_set__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(298);
-/* harmony import */ var babel_runtime_helpers_set__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_helpers_set__WEBPACK_IMPORTED_MODULE_7__);
-/* harmony import */ var babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(280);
-/* harmony import */ var babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_8___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_8__);
-/* harmony import */ var babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(223);
-/* harmony import */ var babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_9___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_9__);
-/* harmony import */ var babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(65);
-/* harmony import */ var babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_10___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_10__);
-/* harmony import */ var css_line_break__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(299);
-/* harmony import */ var css_line_break__WEBPACK_IMPORTED_MODULE_11___default = /*#__PURE__*/__webpack_require__.n(css_line_break__WEBPACK_IMPORTED_MODULE_11__);
-/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(262);
-/* harmony import */ var _basesprite__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(273);
-/* harmony import */ var _nodetype__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(293);
-/* harmony import */ var _helpers_render__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(272);
+/* harmony import */ var babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(280);
+/* harmony import */ var babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_7__);
+/* harmony import */ var babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(223);
+/* harmony import */ var babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_8___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_8__);
+/* harmony import */ var babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(65);
+/* harmony import */ var babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_9___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_9__);
+/* harmony import */ var css_line_break__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(299);
+/* harmony import */ var css_line_break__WEBPACK_IMPORTED_MODULE_10___default = /*#__PURE__*/__webpack_require__.n(css_line_break__WEBPACK_IMPORTED_MODULE_10__);
+/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(262);
+/* harmony import */ var _basesprite__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(273);
+/* harmony import */ var _nodetype__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(293);
+/* harmony import */ var _helpers_render__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(272);
 
 
 
@@ -18188,8 +18229,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-
-var _dec, _dec2, _dec3, _dec4, _dec5, _dec6, _dec7, _dec8, _dec9, _dec10, _desc, _value, _class, _desc2, _value2, _class2, _class3, _temp;
+var _dec, _dec2, _dec3, _dec4, _dec5, _dec6, _dec7, _dec8, _dec9, _dec10, _dec11, _dec12, _desc, _value, _class, _desc2, _value2, _class2, _class3, _temp;
 
 var _applyDecoratedDescriptor = __webpack_require__(285);
 
@@ -18201,8 +18241,8 @@ var _applyDecoratedDescriptor = __webpack_require__(285);
 
 
 var parseFont = __webpack_require__(304);
-var _boxSize = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_10___default()('boxSize'),
-    _outputText = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_10___default()('outputText');
+var _boxSize = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_9___default()('boxSize'),
+    _outputText = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_9___default()('outputText');
 
 var measureText = function measureText(node, text, font) {
   var lineHeight = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : '';
@@ -18251,7 +18291,7 @@ function calculTextboxSize(node) {
     var wordBreak = node.attr('wordBreak');
 
     text.split(/\n/).forEach(function (line) {
-      var breaker = Object(css_line_break__WEBPACK_IMPORTED_MODULE_11__["LineBreaker"])(line, { lineBreak: lineBreak, wordBreak: wordBreak });
+      var breaker = Object(css_line_break__WEBPACK_IMPORTED_MODULE_10__["LineBreaker"])(line, { lineBreak: lineBreak, wordBreak: wordBreak });
       var words = [];
       var bk = breaker.next();
       while (!bk.done) {
@@ -18266,7 +18306,7 @@ function calculTextboxSize(node) {
           var ll = '' + l + word;
 
           var _measureText = measureText(node, ll, font),
-              _measureText2 = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_9___default()(_measureText, 1),
+              _measureText2 = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_8___default()(_measureText, 1),
               w = _measureText2[0];
 
           if (w > (lines.length === 0 ? textboxWidth - textIndent : textboxWidth)) {
@@ -18287,7 +18327,7 @@ function calculTextboxSize(node) {
 
   lines.forEach(function (line, idx) {
     var _measureText3 = measureText(node, line, font, lineHeight),
-        _measureText4 = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_9___default()(_measureText3, 2),
+        _measureText4 = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_8___default()(_measureText3, 2),
         w = _measureText4[0],
         h = _measureText4[1];
 
@@ -18306,8 +18346,8 @@ function calculTextboxSize(node) {
   node[_boxSize] = [width, height];
 }
 
-var LabelSpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_12__["inherit"])('normal normal normal 16px Arial'), _dec2 = Object(_utils__WEBPACK_IMPORTED_MODULE_12__["parseValue"])(parseFloat), _dec3 = Object(_utils__WEBPACK_IMPORTED_MODULE_12__["inherit"])(''), _dec4 = Object(_utils__WEBPACK_IMPORTED_MODULE_12__["parseValue"])(_utils__WEBPACK_IMPORTED_MODULE_12__["parseColorString"]), _dec5 = Object(_utils__WEBPACK_IMPORTED_MODULE_12__["inherit"])(''), _dec6 = Object(_utils__WEBPACK_IMPORTED_MODULE_12__["parseValue"])(_utils__WEBPACK_IMPORTED_MODULE_12__["parseColorString"]), _dec7 = Object(_utils__WEBPACK_IMPORTED_MODULE_12__["inherit"])(''), _dec8 = Object(_utils__WEBPACK_IMPORTED_MODULE_12__["inherit"])(''), _dec9 = Object(_utils__WEBPACK_IMPORTED_MODULE_12__["inherit"])(''), _dec10 = Object(_utils__WEBPACK_IMPORTED_MODULE_12__["inherit"])(''), (_class = function (_BaseSprite$Attr) {
-  babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_8___default()(LabelSpriteAttr, _BaseSprite$Attr);
+var LabelSpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_11__["inherit"])('normal normal normal 16px Arial'), _dec2 = Object(_utils__WEBPACK_IMPORTED_MODULE_11__["parseValue"])(parseFloat), _dec3 = Object(_utils__WEBPACK_IMPORTED_MODULE_11__["parseValue"])(_utils__WEBPACK_IMPORTED_MODULE_11__["parseColorString"]), _dec4 = Object(_utils__WEBPACK_IMPORTED_MODULE_11__["inherit"])(''), _dec5 = Object(_utils__WEBPACK_IMPORTED_MODULE_11__["parseValue"])(_utils__WEBPACK_IMPORTED_MODULE_11__["parseColorString"]), _dec6 = Object(_utils__WEBPACK_IMPORTED_MODULE_11__["inherit"])(''), _dec7 = Object(_utils__WEBPACK_IMPORTED_MODULE_11__["inherit"])(''), _dec8 = Object(_utils__WEBPACK_IMPORTED_MODULE_11__["inherit"])(''), _dec9 = Object(_utils__WEBPACK_IMPORTED_MODULE_11__["inherit"])(''), _dec10 = Object(_utils__WEBPACK_IMPORTED_MODULE_11__["inherit"])(''), _dec11 = Object(_utils__WEBPACK_IMPORTED_MODULE_11__["relative"])('width'), _dec12 = Object(_utils__WEBPACK_IMPORTED_MODULE_11__["relative"])('height'), (_class = function (_BaseSprite$Attr) {
+  babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_7___default()(LabelSpriteAttr, _BaseSprite$Attr);
 
   function LabelSpriteAttr(subject) {
     babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_4___default()(this, LabelSpriteAttr);
@@ -18326,10 +18366,6 @@ var LabelSpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_12__["inher
       wordBreak: 'normal',
       letterSpacing: 0,
       textIndent: 0
-    }, {
-      color: function color() {
-        return this.fillColor;
-      }
     });
     return _this;
   }
@@ -18337,7 +18373,6 @@ var LabelSpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_12__["inher
   babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_5___default()(LabelSpriteAttr, [{
     key: 'text',
     set: function set(val) {
-      this.clearCache();
       val = String(val);
       this.set('text', val);
       calculTextboxSize(this.subject);
@@ -18345,7 +18380,6 @@ var LabelSpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_12__["inher
   }, {
     key: 'font',
     set: function set(val) {
-      this.clearCache();
       this.set('font', val);
       calculTextboxSize(this.subject);
     }
@@ -18462,14 +18496,12 @@ var LabelSpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_12__["inher
   }, {
     key: 'lineHeight',
     set: function set(val) {
-      this.clearCache();
       this.set('lineHeight', val);
       calculTextboxSize(this.subject);
     }
   }, {
     key: 'textAlign',
     set: function set(val) {
-      this.clearCache();
       this.set('textAlign', val);
       calculTextboxSize(this.subject);
     }
@@ -18477,30 +18509,29 @@ var LabelSpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_12__["inher
     key: 'color',
     set: function set(val) {
       this.fillColor = val;
+    },
+    get: function get() {
+      return this.fillColor;
     }
   }, {
     key: 'strokeColor',
     set: function set(val) {
-      this.clearCache();
       this.set('strokeColor', val);
     }
   }, {
     key: 'fillColor',
     set: function set(val) {
-      this.clearCache();
       this.set('fillColor', val);
     }
   }, {
     key: 'flexible',
     set: function set(val) {
-      this.clearCache();
       this.set('flexible', val);
     }
   }, {
     key: 'lineBreak',
     set: function set(val) {
       // normal, strict, none
-      this.clearCache();
       this.set('lineBreak', val);
       calculTextboxSize(this.subject);
     }
@@ -18508,7 +18539,6 @@ var LabelSpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_12__["inher
     key: 'wordBreak',
     set: function set(val) {
       // normal | break-all | break-word | keep-all
-      this.clearCache();
       this.set('wordBreak', val);
       calculTextboxSize(this.subject);
     }
@@ -18516,7 +18546,6 @@ var LabelSpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_12__["inher
     key: 'letterSpacing',
     set: function set(value) {
       if (typeof value === 'string') value = parseFloat(value);
-      this.clearCache();
       this.set('letterSpacing', value);
       calculTextboxSize(this.subject);
     }
@@ -18524,7 +18553,6 @@ var LabelSpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_12__["inher
     key: 'textIndent',
     set: function set(value) {
       if (typeof value === 'string') value = parseFloat(value);
-      this.clearCache();
       this.set('textIndent', value);
       calculTextboxSize(this.subject);
     }
@@ -18532,20 +18560,20 @@ var LabelSpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_12__["inher
     key: 'width',
     set: function set(val) {
       if (this.lineBreak !== '') calculTextboxSize(this.subject);
-      babel_runtime_helpers_set__WEBPACK_IMPORTED_MODULE_7___default()(LabelSpriteAttr.prototype.__proto__ || babel_runtime_core_js_object_get_prototype_of__WEBPACK_IMPORTED_MODULE_3___default()(LabelSpriteAttr.prototype), 'width', val, this);
+      this.set('width', val);
     }
   }, {
     key: 'layoutWidth',
     set: function set(val) {
       if (this.lineBreak !== '') calculTextboxSize(this.subject);
-      babel_runtime_helpers_set__WEBPACK_IMPORTED_MODULE_7___default()(LabelSpriteAttr.prototype.__proto__ || babel_runtime_core_js_object_get_prototype_of__WEBPACK_IMPORTED_MODULE_3___default()(LabelSpriteAttr.prototype), 'layoutWidth', val, this);
+      this.set('layoutWidth', val);
     }
   }]);
 
   return LabelSpriteAttr;
-}(_basesprite__WEBPACK_IMPORTED_MODULE_13__["default"].Attr), (_applyDecoratedDescriptor(_class.prototype, 'text', [_utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'text'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'font', [_dec, _utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'font'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fontSize', [_utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'fontSize'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fontFamily', [_utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'fontFamily'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fontStyle', [_utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'fontStyle'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fontVariant', [_utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'fontVariant'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fontWeight', [_utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'fontWeight'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'lineHeight', [_dec2, _utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'lineHeight'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'textAlign', [_utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'textAlign'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'color', [_utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'color'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'strokeColor', [_dec3, _dec4, _utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'strokeColor'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fillColor', [_dec5, _dec6, _utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'fillColor'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'flexible', [_utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'flexible'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'lineBreak', [_dec7, _utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'lineBreak'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'wordBreak', [_dec8, _utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'wordBreak'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'letterSpacing', [_dec9, _utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'letterSpacing'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'textIndent', [_dec10, _utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'textIndent'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'width', [_utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'width'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'layoutWidth', [_utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'layoutWidth'), _class.prototype)), _class));
+}(_basesprite__WEBPACK_IMPORTED_MODULE_12__["default"].Attr), (_applyDecoratedDescriptor(_class.prototype, 'text', [_utils__WEBPACK_IMPORTED_MODULE_11__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'text'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'font', [_utils__WEBPACK_IMPORTED_MODULE_11__["attr"], _dec], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'font'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fontSize', [_utils__WEBPACK_IMPORTED_MODULE_11__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'fontSize'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fontFamily', [_utils__WEBPACK_IMPORTED_MODULE_11__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'fontFamily'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fontStyle', [_utils__WEBPACK_IMPORTED_MODULE_11__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'fontStyle'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fontVariant', [_utils__WEBPACK_IMPORTED_MODULE_11__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'fontVariant'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fontWeight', [_utils__WEBPACK_IMPORTED_MODULE_11__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'fontWeight'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'lineHeight', [_dec2, _utils__WEBPACK_IMPORTED_MODULE_11__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'lineHeight'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'textAlign', [_utils__WEBPACK_IMPORTED_MODULE_11__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'textAlign'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'color', [_utils__WEBPACK_IMPORTED_MODULE_11__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'color'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'strokeColor', [_dec3, _utils__WEBPACK_IMPORTED_MODULE_11__["attr"], _dec4], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'strokeColor'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fillColor', [_dec5, _utils__WEBPACK_IMPORTED_MODULE_11__["attr"], _dec6], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'fillColor'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'flexible', [_utils__WEBPACK_IMPORTED_MODULE_11__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'flexible'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'lineBreak', [_utils__WEBPACK_IMPORTED_MODULE_11__["attr"], _dec7], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'lineBreak'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'wordBreak', [_utils__WEBPACK_IMPORTED_MODULE_11__["attr"], _dec8], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'wordBreak'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'letterSpacing', [_utils__WEBPACK_IMPORTED_MODULE_11__["attr"], _dec9], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'letterSpacing'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'textIndent', [_utils__WEBPACK_IMPORTED_MODULE_11__["attr"], _dec10], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'textIndent'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'width', [_utils__WEBPACK_IMPORTED_MODULE_11__["attr"], _dec11], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'width'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'layoutWidth', [_utils__WEBPACK_IMPORTED_MODULE_11__["attr"], _dec12], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'layoutWidth'), _class.prototype)), _class));
 var Label = (_class2 = (_temp = _class3 = function (_BaseSprite) {
-  babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_8___default()(Label, _BaseSprite);
+  babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_7___default()(Label, _BaseSprite);
 
   function Label(attr) {
     babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_4___default()(this, Label);
@@ -18571,7 +18599,7 @@ var Label = (_class2 = (_temp = _class3 = function (_BaseSprite) {
       var text = this.text;
 
       if (text) {
-        var _contentSize = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_9___default()(this.contentSize, 2),
+        var _contentSize = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_8___default()(this.contentSize, 2),
             w = _contentSize[0],
             h = _contentSize[1];
 
@@ -18592,15 +18620,15 @@ var Label = (_class2 = (_temp = _class3 = function (_BaseSprite) {
 
         drawingContext.textBaseline = 'middle';
 
-        var strokeColor = Object(_helpers_render__WEBPACK_IMPORTED_MODULE_15__["findColor"])(drawingContext, this, 'strokeColor');
+        var strokeColor = Object(_helpers_render__WEBPACK_IMPORTED_MODULE_14__["findColor"])(drawingContext, this, 'strokeColor');
         if (strokeColor) {
           drawingContext.strokeStyle = strokeColor;
         }
 
-        var fillColor = Object(_helpers_render__WEBPACK_IMPORTED_MODULE_15__["findColor"])(drawingContext, this, 'fillColor');
+        var fillColor = Object(_helpers_render__WEBPACK_IMPORTED_MODULE_14__["findColor"])(drawingContext, this, 'fillColor');
 
         if (!strokeColor && !fillColor) {
-          fillColor = Object(_utils__WEBPACK_IMPORTED_MODULE_12__["parseColorString"])('black');
+          fillColor = Object(_utils__WEBPACK_IMPORTED_MODULE_11__["parseColorString"])('black');
         }
         if (fillColor) {
           drawingContext.fillStyle = fillColor;
@@ -18613,7 +18641,7 @@ var Label = (_class2 = (_temp = _class3 = function (_BaseSprite) {
 
         lines.forEach(function (line, idx) {
           var _measureText5 = measureText(_this3, line, font, lineHeight),
-              _measureText6 = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_9___default()(_measureText5, 2),
+              _measureText6 = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_8___default()(_measureText5, 2),
               w = _measureText6[0],
               h = _measureText6[1];
 
@@ -18693,7 +18721,7 @@ var Label = (_class2 = (_temp = _class3 = function (_BaseSprite) {
   }, {
     key: 'contentSize',
     get: function get() {
-      var _attrSize = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_9___default()(this.attrSize, 2),
+      var _attrSize = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_8___default()(this.attrSize, 2),
           width = _attrSize[0],
           height = _attrSize[1];
 
@@ -18713,52 +18741,11 @@ var Label = (_class2 = (_temp = _class3 = function (_BaseSprite) {
   }]);
 
   return Label;
-}(_basesprite__WEBPACK_IMPORTED_MODULE_13__["default"]), _class3.Attr = LabelSpriteAttr, _temp), (_applyDecoratedDescriptor(_class2.prototype, 'contentSize', [_utils__WEBPACK_IMPORTED_MODULE_12__["flow"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class2.prototype, 'contentSize'), _class2.prototype)), _class2);
+}(_basesprite__WEBPACK_IMPORTED_MODULE_12__["default"]), _class3.Attr = LabelSpriteAttr, _temp), (_applyDecoratedDescriptor(_class2.prototype, 'contentSize', [_utils__WEBPACK_IMPORTED_MODULE_11__["flow"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class2.prototype, 'contentSize'), _class2.prototype)), _class2);
 
 
 
-Object(_nodetype__WEBPACK_IMPORTED_MODULE_14__["registerNodeType"])('label', Label);
-
-/***/ }),
-/* 298 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-exports.__esModule = true;
-
-var _getPrototypeOf = __webpack_require__(275);
-
-var _getPrototypeOf2 = _interopRequireDefault(_getPrototypeOf);
-
-var _getOwnPropertyDescriptor = __webpack_require__(124);
-
-var _getOwnPropertyDescriptor2 = _interopRequireDefault(_getOwnPropertyDescriptor);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-exports.default = function set(object, property, value, receiver) {
-  var desc = (0, _getOwnPropertyDescriptor2.default)(object, property);
-
-  if (desc === undefined) {
-    var parent = (0, _getPrototypeOf2.default)(object);
-
-    if (parent !== null) {
-      set(parent, property, value, receiver);
-    }
-  } else if ("value" in desc && desc.writable) {
-    desc.value = value;
-  } else {
-    var setter = desc.set;
-
-    if (setter !== undefined) {
-      setter.call(receiver, value);
-    }
-  }
-
-  return value;
-};
+Object(_nodetype__WEBPACK_IMPORTED_MODULE_13__["registerNodeType"])('label', Label);
 
 /***/ }),
 /* 299 */
@@ -20456,13 +20443,6 @@ var Batch = function () {
             }
           }
         });
-        Object.defineProperty(node, 'cachePriority', {
-          configurable: true,
-          get: function get() {
-            return Infinity;
-          },
-          set: function set(value) {}
-        });
         node[_batch] = _this;
         _this[_batch].add(node);
       });
@@ -20537,18 +20517,16 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_7__);
 /* harmony import */ var babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(278);
 /* harmony import */ var babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_8___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_8__);
-/* harmony import */ var babel_runtime_helpers_set__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(298);
-/* harmony import */ var babel_runtime_helpers_set__WEBPACK_IMPORTED_MODULE_9___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_helpers_set__WEBPACK_IMPORTED_MODULE_9__);
-/* harmony import */ var babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(280);
-/* harmony import */ var babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_10___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_10__);
-/* harmony import */ var babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(65);
-/* harmony import */ var babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_11___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_11__);
-/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(262);
-/* harmony import */ var _basesprite__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(273);
-/* harmony import */ var _nodetype__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(293);
-/* harmony import */ var _helpers_path__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(308);
-/* harmony import */ var _layout__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(310);
-/* harmony import */ var _helpers_group__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(312);
+/* harmony import */ var babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(280);
+/* harmony import */ var babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_9___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_9__);
+/* harmony import */ var babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(65);
+/* harmony import */ var babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_10___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_10__);
+/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(262);
+/* harmony import */ var _basesprite__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(273);
+/* harmony import */ var _nodetype__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(293);
+/* harmony import */ var _helpers_path__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(308);
+/* harmony import */ var _layout__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(310);
+/* harmony import */ var _helpers_group__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(312);
 
 
 
@@ -20561,8 +20539,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-
-var _dec, _dec2, _desc, _value, _class, _class2, _temp, _desc2, _value2, _class3, _class4, _temp2;
+var _dec, _dec2, _dec3, _dec4, _dec5, _dec6, _desc, _value, _class, _class2, _temp, _desc2, _value2, _class3, _class4, _temp2;
 
 var _applyDecoratedDescriptor = __webpack_require__(285);
 
@@ -20574,12 +20551,12 @@ var _applyDecoratedDescriptor = __webpack_require__(285);
 
 
 
-var _children = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_11___default()('children'),
-    _zOrder = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_11___default()('zOrder'),
-    _layoutTag = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_11___default()('layoutTag');
+var _children = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_10___default()('children'),
+    _zOrder = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_10___default()('zOrder'),
+    _layoutTag = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_10___default()('layoutTag');
 
-var GroupAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_12__["parseValue"])(parseFloat), _dec2 = Object(_utils__WEBPACK_IMPORTED_MODULE_12__["parseValue"])(parseFloat), (_class = (_temp = _class2 = function (_BaseSprite$Attr) {
-  babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_10___default()(GroupAttr, _BaseSprite$Attr);
+var GroupAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_11__["relative"])('width'), _dec2 = Object(_utils__WEBPACK_IMPORTED_MODULE_11__["relative"])('height'), _dec3 = Object(_utils__WEBPACK_IMPORTED_MODULE_11__["relative"])('width'), _dec4 = Object(_utils__WEBPACK_IMPORTED_MODULE_11__["relative"])('height'), _dec5 = Object(_utils__WEBPACK_IMPORTED_MODULE_11__["parseValue"])(parseFloat), _dec6 = Object(_utils__WEBPACK_IMPORTED_MODULE_11__["parseValue"])(parseFloat), (_class = (_temp = _class2 = function (_BaseSprite$Attr) {
+  babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_9___default()(GroupAttr, _BaseSprite$Attr);
 
   function GroupAttr(subject) {
     babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_6___default()(this, GroupAttr);
@@ -20601,11 +20578,10 @@ var GroupAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_12__["parseValue"
   babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_7___default()(GroupAttr, [{
     key: 'clip',
     set: function set(val) {
-      this.clearCache();
       this.clearFlow();
       if (val) {
         val = typeof val === 'string' ? { d: val } : val;
-        this.subject.svg = Object(_helpers_path__WEBPACK_IMPORTED_MODULE_15__["createSvgPath"])(val);
+        this.subject.svg = Object(_helpers_path__WEBPACK_IMPORTED_MODULE_14__["createSvgPath"])(val);
         this.set('clip', val);
       } else {
         this.subject.svg = null;
@@ -20616,54 +20592,52 @@ var GroupAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_12__["parseValue"
     key: 'width',
     set: function set(value) {
       this.subject.clearLayout();
-      babel_runtime_helpers_set__WEBPACK_IMPORTED_MODULE_9___default()(GroupAttr.prototype.__proto__ || babel_runtime_core_js_object_get_prototype_of__WEBPACK_IMPORTED_MODULE_5___default()(GroupAttr.prototype), 'width', value, this);
+      this.set('width', value);
     }
   }, {
     key: 'height',
     set: function set(value) {
       this.subject.clearLayout();
-      babel_runtime_helpers_set__WEBPACK_IMPORTED_MODULE_9___default()(GroupAttr.prototype.__proto__ || babel_runtime_core_js_object_get_prototype_of__WEBPACK_IMPORTED_MODULE_5___default()(GroupAttr.prototype), 'height', value, this);
+      this.set('height', value);
     }
   }, {
     key: 'layoutWidth',
     set: function set(value) {
       this.subject.clearLayout();
-      babel_runtime_helpers_set__WEBPACK_IMPORTED_MODULE_9___default()(GroupAttr.prototype.__proto__ || babel_runtime_core_js_object_get_prototype_of__WEBPACK_IMPORTED_MODULE_5___default()(GroupAttr.prototype), 'layoutWidth', value, this);
+      this.set('layoutWidth', value);
     }
   }, {
     key: 'layoutHeight',
     set: function set(value) {
       this.subject.clearLayout();
-      babel_runtime_helpers_set__WEBPACK_IMPORTED_MODULE_9___default()(GroupAttr.prototype.__proto__ || babel_runtime_core_js_object_get_prototype_of__WEBPACK_IMPORTED_MODULE_5___default()(GroupAttr.prototype), 'layoutHeight', value, this);
+      this.set('layoutHeight', value);
     }
   }, {
     key: 'display',
     set: function set(value) {
       this.subject.clearLayout();
-      babel_runtime_helpers_set__WEBPACK_IMPORTED_MODULE_9___default()(GroupAttr.prototype.__proto__ || babel_runtime_core_js_object_get_prototype_of__WEBPACK_IMPORTED_MODULE_5___default()(GroupAttr.prototype), 'display', value, this);
+      this.set('display', value);
     }
   }, {
     key: 'scrollLeft',
     set: function set(value) {
-      this.clearCache();
       this.set('scrollLeft', value);
     }
   }, {
     key: 'scrollTop',
     set: function set(value) {
-      this.clearCache();
       this.set('scrollTop', value);
     }
   }]);
 
   return GroupAttr;
-}(_basesprite__WEBPACK_IMPORTED_MODULE_13__["default"].Attr), _class2.inits = [], _temp), (_applyDecoratedDescriptor(_class.prototype, 'clip', [_utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_4___default()(_class.prototype, 'clip'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'width', [_utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_4___default()(_class.prototype, 'width'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'height', [_utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_4___default()(_class.prototype, 'height'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'layoutWidth', [_utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_4___default()(_class.prototype, 'layoutWidth'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'layoutHeight', [_utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_4___default()(_class.prototype, 'layoutHeight'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'display', [_utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_4___default()(_class.prototype, 'display'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'scrollLeft', [_dec, _utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_4___default()(_class.prototype, 'scrollLeft'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'scrollTop', [_dec2, _utils__WEBPACK_IMPORTED_MODULE_12__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_4___default()(_class.prototype, 'scrollTop'), _class.prototype)), _class));
+}(_basesprite__WEBPACK_IMPORTED_MODULE_12__["default"].Attr), _class2.inits = [], _temp), (_applyDecoratedDescriptor(_class.prototype, 'clip', [_utils__WEBPACK_IMPORTED_MODULE_11__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_4___default()(_class.prototype, 'clip'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'width', [_utils__WEBPACK_IMPORTED_MODULE_11__["attr"], _dec], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_4___default()(_class.prototype, 'width'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'height', [_utils__WEBPACK_IMPORTED_MODULE_11__["attr"], _dec2], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_4___default()(_class.prototype, 'height'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'layoutWidth', [_utils__WEBPACK_IMPORTED_MODULE_11__["attr"], _dec3], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_4___default()(_class.prototype, 'layoutWidth'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'layoutHeight', [_utils__WEBPACK_IMPORTED_MODULE_11__["attr"], _dec4], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_4___default()(_class.prototype, 'layoutHeight'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'display', [_utils__WEBPACK_IMPORTED_MODULE_11__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_4___default()(_class.prototype, 'display'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'scrollLeft', [_dec5, _utils__WEBPACK_IMPORTED_MODULE_11__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_4___default()(_class.prototype, 'scrollLeft'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'scrollTop', [_dec6, _utils__WEBPACK_IMPORTED_MODULE_11__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_4___default()(_class.prototype, 'scrollTop'), _class.prototype)), _class));
 
 
-var _layout = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_11___default()('layout');
+var _layout = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_10___default()('layout');
 
 var Group = (_class3 = (_temp2 = _class4 = function (_BaseSprite) {
-  babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_10___default()(Group, _BaseSprite);
+  babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_9___default()(Group, _BaseSprite);
 
   babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_7___default()(Group, null, [{
     key: 'applyLayout',
@@ -20970,13 +20944,13 @@ var Group = (_class3 = (_temp2 = _class4 = function (_BaseSprite) {
   }]);
 
   return Group;
-}(_basesprite__WEBPACK_IMPORTED_MODULE_13__["default"]), _class4.Attr = GroupAttr, _temp2), (_applyDecoratedDescriptor(_class3.prototype, 'contentSize', [_utils__WEBPACK_IMPORTED_MODULE_12__["flow"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_4___default()(_class3.prototype, 'contentSize'), _class3.prototype)), _class3);
+}(_basesprite__WEBPACK_IMPORTED_MODULE_12__["default"]), _class4.Attr = GroupAttr, _temp2), (_applyDecoratedDescriptor(_class3.prototype, 'contentSize', [_utils__WEBPACK_IMPORTED_MODULE_11__["flow"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_4___default()(_class3.prototype, 'contentSize'), _class3.prototype)), _class3);
 
 
-babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_0___default()(Group.prototype, _helpers_group__WEBPACK_IMPORTED_MODULE_17__["default"]);
-Group.applyLayout('flex', _layout__WEBPACK_IMPORTED_MODULE_16__["flexLayout"]);
+babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_0___default()(Group.prototype, _helpers_group__WEBPACK_IMPORTED_MODULE_16__["default"]);
+Group.applyLayout('flex', _layout__WEBPACK_IMPORTED_MODULE_15__["flexLayout"]);
 
-Object(_nodetype__WEBPACK_IMPORTED_MODULE_14__["registerNodeType"])('group', Group, true);
+Object(_nodetype__WEBPACK_IMPORTED_MODULE_13__["registerNodeType"])('group', Group, true);
 
 /***/ }),
 /* 308 */
@@ -21406,27 +21380,22 @@ var attrs = {
     });
   },
   flexDirection: function flexDirection(attr, value) {
-    attr.clearCache();
     attr.subject.clearLayout();
     attr.set('flexDirection', value);
   },
   flexWrap: function flexWrap(attr, value) {
-    attr.clearCache();
     attr.subject.clearLayout();
     attr.set('flexWrap', value);
   },
   justifyContent: function justifyContent(attr, value) {
-    attr.clearCache();
     attr.subject.clearLayout();
     attr.set('justifyContent', value);
   },
   alignItems: function alignItems(attr, value) {
-    attr.clearCache();
     attr.subject.clearLayout();
     attr.set('alignItems', value);
   },
   alignContent: function alignContent(attr, value) {
-    attr.clearCache();
     attr.subject.clearLayout();
     attr.set('alignContent', value);
   }
@@ -22042,9 +22011,6 @@ var PathSpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_9__["inherit
     }, {
       color: function color() {
         return this.strokeColor;
-      },
-      d: function d() {
-        return this.path ? this.path.d : null;
       }
     });
     return _this;
@@ -22053,7 +22019,6 @@ var PathSpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_9__["inherit
   babel_runtime_helpers_createClass__WEBPACK_IMPORTED_MODULE_6___default()(PathSpriteAttr, [{
     key: 'path',
     set: function set(val) {
-      this.clearCache();
       this.clearFlow();
       if (val) {
         val = typeof val === 'string' ? { d: val } : val;
@@ -22077,12 +22042,14 @@ var PathSpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_9__["inherit
       } else {
         this.path = null;
       }
+    },
+    get: function get() {
+      return this.path ? this.path.d : null;
     }
   }, {
     key: 'lineWidth',
     set: function set(val) {
       if (typeof val === 'string') val = parseFloat(val);
-      this.clearCache();
       this.clearFlow();
       this.set('lineWidth', Math.round(val));
     }
@@ -22090,13 +22057,11 @@ var PathSpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_9__["inherit
     key: 'lineDash',
     set: function set(val) {
       if (typeof val === 'number') val = [val];
-      this.clearCache();
       this.set('lineDash', val);
     }
   }, {
     key: 'lineDashOffset',
     set: function set(val) {
-      this.clearCache();
       this.set('lineDashOffset', val);
     }
 
@@ -22107,7 +22072,6 @@ var PathSpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_9__["inherit
   }, {
     key: 'lineCap',
     set: function set(val) {
-      this.clearCache();
       this.set('lineCap', val);
     }
 
@@ -22118,25 +22082,21 @@ var PathSpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_9__["inherit
   }, {
     key: 'lineJoin',
     set: function set(val) {
-      this.clearCache();
       this.set('lineJoin', val);
     }
   }, {
     key: 'strokeColor',
     set: function set(val) {
-      this.clearCache();
       this.set('strokeColor', Object(_utils__WEBPACK_IMPORTED_MODULE_9__["parseColorString"])(val));
     }
   }, {
     key: 'fillColor',
     set: function set(val) {
-      this.clearCache();
       this.set('fillColor', Object(_utils__WEBPACK_IMPORTED_MODULE_9__["parseColorString"])(val));
     }
   }, {
     key: 'flexible',
     set: function set(val) {
-      this.clearCache();
       this.clearFlow();
       this.set('flexible', val);
     }
@@ -22154,7 +22114,7 @@ var PathSpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_9__["inherit
   }]);
 
   return PathSpriteAttr;
-}(_basesprite__WEBPACK_IMPORTED_MODULE_10__["default"].Attr), (_applyDecoratedDescriptor(_class.prototype, 'path', [_utils__WEBPACK_IMPORTED_MODULE_9__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'path'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'd', [_utils__WEBPACK_IMPORTED_MODULE_9__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'd'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'lineWidth', [_dec, _utils__WEBPACK_IMPORTED_MODULE_9__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'lineWidth'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'lineDash', [_dec2, _utils__WEBPACK_IMPORTED_MODULE_9__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'lineDash'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'lineDashOffset', [_dec3, _utils__WEBPACK_IMPORTED_MODULE_9__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'lineDashOffset'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'lineCap', [_dec4, _utils__WEBPACK_IMPORTED_MODULE_9__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'lineCap'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'lineJoin', [_dec5, _utils__WEBPACK_IMPORTED_MODULE_9__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'lineJoin'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'strokeColor', [_dec6, _utils__WEBPACK_IMPORTED_MODULE_9__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'strokeColor'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fillColor', [_dec7, _utils__WEBPACK_IMPORTED_MODULE_9__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'fillColor'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'flexible', [_utils__WEBPACK_IMPORTED_MODULE_9__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'flexible'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'bounding', [_dec8, _utils__WEBPACK_IMPORTED_MODULE_9__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'bounding'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'color', [_dec9, _utils__WEBPACK_IMPORTED_MODULE_9__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'color'), _class.prototype)), _class));
+}(_basesprite__WEBPACK_IMPORTED_MODULE_10__["default"].Attr), (_applyDecoratedDescriptor(_class.prototype, 'path', [_utils__WEBPACK_IMPORTED_MODULE_9__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'path'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'd', [_utils__WEBPACK_IMPORTED_MODULE_9__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'd'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'lineWidth', [_utils__WEBPACK_IMPORTED_MODULE_9__["attr"], _dec], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'lineWidth'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'lineDash', [_dec2, _utils__WEBPACK_IMPORTED_MODULE_9__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'lineDash'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'lineDashOffset', [_dec3, _utils__WEBPACK_IMPORTED_MODULE_9__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'lineDashOffset'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'lineCap', [_utils__WEBPACK_IMPORTED_MODULE_9__["attr"], _dec4], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'lineCap'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'lineJoin', [_utils__WEBPACK_IMPORTED_MODULE_9__["attr"], _dec5], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'lineJoin'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'strokeColor', [_utils__WEBPACK_IMPORTED_MODULE_9__["attr"], _dec6], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'strokeColor'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'fillColor', [_utils__WEBPACK_IMPORTED_MODULE_9__["attr"], _dec7], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'fillColor'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'flexible', [_utils__WEBPACK_IMPORTED_MODULE_9__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'flexible'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'bounding', [_utils__WEBPACK_IMPORTED_MODULE_9__["attr"], _dec8], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'bounding'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'color', [_dec9, _utils__WEBPACK_IMPORTED_MODULE_9__["attr"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_2___default()(_class.prototype, 'color'), _class.prototype)), _class));
 var Path = (_class2 = (_temp = _class3 = function (_BaseSprite) {
   babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_8___default()(Path, _BaseSprite);
 
@@ -23809,6 +23769,7 @@ var ResAttr = (_class = function (_Sprite$Attr) {
         return babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_2___default()({}, texture, { image: img });
       });
       if (clearCache) {
+        // async loaded images
         this.subject.forceUpdate(true);
       }
       babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_7___default()(ResAttr.prototype.__proto__ || babel_runtime_core_js_object_get_prototype_of__WEBPACK_IMPORTED_MODULE_3___default()(ResAttr.prototype), 'loadTextures', this).call(this, res);
@@ -26775,7 +26736,7 @@ $export($export.S, 'Object', {
 /* 356 */
 /***/ (function(module) {
 
-module.exports = {"_from":"spritejs@^2.13.9","_id":"spritejs@2.13.9","_inBundle":false,"_integrity":"sha512-VmPscXchdvCcFH4E1bZW4BnTmAQ/mIEd0A5QlCR5JDUQw2VKV0kd40gY8Z97ypWCR1MeqKZ+OO30B2ZwtxchoA==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.13.9","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.13.9","saveSpec":null,"fetchSpec":"^2.13.9"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.13.9.tgz","_shasum":"e0648ecd8140fb7ea34ccffaefaa1317b7809c96","_spec":"spritejs@^2.13.9","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.15.9"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^11.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.13.9"};
+module.exports = {"_from":"spritejs@^2.14.0","_id":"spritejs@2.14.0","_inBundle":false,"_integrity":"sha512-DyIsSL9t29DiqWwYMoF+mB4LkpowU6odjMc0olECFDibXjYRDpMDdD3T2rA4xqBXN+pcB39Po+DDWksdeNePYg==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.14.0","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.14.0","saveSpec":null,"fetchSpec":"^2.14.0"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.14.0.tgz","_shasum":"c9e208cd3ba07599e67c2f0a64619757ca4f4d26","_spec":"spritejs@^2.14.0","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.16.0"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^11.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.14.0"};
 
 /***/ }),
 /* 357 */

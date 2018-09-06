@@ -18,7 +18,7 @@ const layer = scene.layer();
 
 const group = new Group({
   display: 'flex',
-  width: 600,
+  width: 500,
   y: 100,
   justifyContent: 'space-between',
 });
@@ -26,9 +26,10 @@ const s1 = new Sprite({
   size: [50, 50],
   bgcolor: 'red',
   opacity: 0.5,
+  id: 's1',
 });
 const s2 = s1.cloneNode()
-s2.attr({bgcolor: 'green'});
+s2.attr({bgcolor: 'green', id: 's2'});
 group.append(s1, s2);
 layer.append(group);
 
