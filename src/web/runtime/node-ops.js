@@ -72,6 +72,8 @@ export function insertBefore (parentNode: Node, newNode: Node, referenceNode: No
       parentNode.insertBefore(newNode, referenceNode)
     }
   } else {
+    if (newNode instanceof Scene) newNode = newNode.container
+    if (referenceNode instanceof Scene) referenceNode = referenceNode.container
     parentNode.insertBefore(newNode, referenceNode)
   }
 }

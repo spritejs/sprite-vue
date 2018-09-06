@@ -6,6 +6,13 @@
   <title>Example</title>
   <script src="/js/sprite-vue.js"></script>
   <!-- <script src="/js/sprite-vue-debug.js"></script> -->
+  <style>
+  #container {
+    width: 600px;
+    height: 600px;
+    position: relative;
+  }
+  </style>
 </head>
 <body>
   <div id="app"></div>
@@ -74,11 +81,27 @@ Vue.component('my-scene', {
   `
 })
 
-new Vue({
+const v = new Vue({
   el: '#app',
-  template: `<div>
-  <my-scene></my-scene>
-</div>`
+  data() {
+    return {
+      state: false
+    };
+  },
+  methods: {
+    toggle() {
+      console.log(111);
+      this.state = !this.state;
+    }
+  },
+  template: `
+  <div>
+    <h1 @click="toggle"> abc </h1>
+    <div v-if="state">
+      <my-scene></my-scene>
+    </div>
+  </div>
+`
 })
   </script>
 </body>
