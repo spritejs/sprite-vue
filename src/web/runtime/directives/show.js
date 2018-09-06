@@ -2,6 +2,12 @@
 
 import { enter, leave } from '../modules/transition'
 
+function getStyle (el) {
+  if (el.style) return el.style
+  if (el.container && el.container.style) return el.container.style
+  return el.attributes
+}
+
 // recursively search for possible transition defined inside the component root
 function locateNode (vnode: VNode): VNodeWithData {
   return vnode.componentInstance && (!vnode.data || !vnode.data.transition)
@@ -13,15 +19,17 @@ export default {
   bind (el: any, { value }: VNodeDirective, vnode: VNodeWithData) {
     vnode = locateNode(vnode)
     const transition = vnode.data && vnode.data.transition
+    const style = getStyle(el)
+
     const originalDisplay = el.__vOriginalDisplay =
-      el.style.display === 'none' ? '' : el.style.display
+      style.display === 'none' ? '' : style.display
     if (value && transition) {
       vnode.data.show = true
       enter(vnode, () => {
-        el.style.display = originalDisplay
+        style.display = originalDisplay
       })
     } else {
-      el.style.display = value ? originalDisplay : 'none'
+      style.display = value ? originalDisplay : 'none'
     }
   },
 
@@ -31,18 +39,19 @@ export default {
     vnode = locateNode(vnode)
     const transition = vnode.data && vnode.data.transition
     if (transition) {
+      const style = getStyle(el)
       vnode.data.show = true
       if (value) {
         enter(vnode, () => {
-          el.style.display = el.__vOriginalDisplay
+          style.display = el.__vOriginalDisplay
         })
       } else {
         leave(vnode, () => {
-          el.style.display = 'none'
+          style.display = 'none'
         })
       }
     } else {
-      el.style.display = value ? el.__vOriginalDisplay : 'none'
+      style.display = value ? el.__vOriginalDisplay : 'none'
     }
   },
 
@@ -54,7 +63,8 @@ export default {
     isDestroy: boolean
   ) {
     if (!isDestroy) {
-      el.style.display = el.__vOriginalDisplay
+      const style = getStyle(el)
+      style.display = el.__vOriginalDisplay
     }
   }
 }
