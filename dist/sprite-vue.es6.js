@@ -25007,25 +25007,18 @@ function locateNode(vnode) {
   return vnode.componentInstance && (!vnode.data || !vnode.data.transition) ? locateNode(vnode.componentInstance._vnode) : vnode;
 }
 
-function getStyle(el) {
-  if (el.style) return el.style;
-  if (el.container && el.container.style) return el.container.style;
-  return el.attributes;
-}
-
 /* harmony default export */ __webpack_exports__["default"] = ({
   bind(el, { value }, vnode) {
     vnode = locateNode(vnode);
     const transition = vnode.data && vnode.data.transition;
-    const style = getStyle(el);
-    const originalDisplay = el.__vOriginalDisplay = style.display === 'none' ? '' : style.display;
+    const originalDisplay = el.__vOriginalDisplay = el.style.display === 'none' ? '' : el.style.display;
     if (value && transition) {
       vnode.data.show = true;
       Object(_modules_transition__WEBPACK_IMPORTED_MODULE_0__["enter"])(vnode, () => {
-        style.display = originalDisplay;
+        el.style.display = originalDisplay;
       });
     } else {
-      style.display = value ? originalDisplay : 'none';
+      el.style.display = value ? originalDisplay : 'none';
     }
   },
 
@@ -25034,28 +25027,25 @@ function getStyle(el) {
     if (!value === !oldValue) return;
     vnode = locateNode(vnode);
     const transition = vnode.data && vnode.data.transition;
-    const style = getStyle(el);
-    console.log(el);
     if (transition) {
       vnode.data.show = true;
       if (value) {
         Object(_modules_transition__WEBPACK_IMPORTED_MODULE_0__["enter"])(vnode, () => {
-          style.display = el.__vOriginalDisplay;
+          el.style.display = el.__vOriginalDisplay;
         });
       } else {
         Object(_modules_transition__WEBPACK_IMPORTED_MODULE_0__["leave"])(vnode, () => {
-          style.display = 'none';
+          el.style.display = 'none';
         });
       }
     } else {
-      style.display = value ? el.__vOriginalDisplay : 'none';
+      el.style.display = value ? el.__vOriginalDisplay : 'none';
     }
   },
 
   unbind(el, binding, vnode, oldVnode, isDestroy) {
     if (!isDestroy) {
-      const style = getStyle(el);
-      style.display = el.__vOriginalDisplay;
+      el.style.display = el.__vOriginalDisplay;
     }
   }
 });

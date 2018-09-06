@@ -30399,27 +30399,20 @@ function locateNode(vnode) {
   return vnode.componentInstance && (!vnode.data || !vnode.data.transition) ? locateNode(vnode.componentInstance._vnode) : vnode;
 }
 
-function getStyle(el) {
-  if (el.style) return el.style;
-  if (el.container && el.container.style) return el.container.style;
-  return el.attributes;
-}
-
 /* harmony default export */ __webpack_exports__["default"] = ({
   bind: function bind(el, _ref, vnode) {
     var value = _ref.value;
 
     vnode = locateNode(vnode);
     var transition = vnode.data && vnode.data.transition;
-    var style = getStyle(el);
-    var originalDisplay = el.__vOriginalDisplay = style.display === 'none' ? '' : style.display;
+    var originalDisplay = el.__vOriginalDisplay = el.style.display === 'none' ? '' : el.style.display;
     if (value && transition) {
       vnode.data.show = true;
       Object(_modules_transition__WEBPACK_IMPORTED_MODULE_0__["enter"])(vnode, function () {
-        style.display = originalDisplay;
+        el.style.display = originalDisplay;
       });
     } else {
-      style.display = value ? originalDisplay : 'none';
+      el.style.display = value ? originalDisplay : 'none';
     }
   },
   update: function update(el, _ref2, vnode) {
@@ -30430,27 +30423,24 @@ function getStyle(el) {
     if (!value === !oldValue) return;
     vnode = locateNode(vnode);
     var transition = vnode.data && vnode.data.transition;
-    var style = getStyle(el);
-    console.log(el);
     if (transition) {
       vnode.data.show = true;
       if (value) {
         Object(_modules_transition__WEBPACK_IMPORTED_MODULE_0__["enter"])(vnode, function () {
-          style.display = el.__vOriginalDisplay;
+          el.style.display = el.__vOriginalDisplay;
         });
       } else {
         Object(_modules_transition__WEBPACK_IMPORTED_MODULE_0__["leave"])(vnode, function () {
-          style.display = 'none';
+          el.style.display = 'none';
         });
       }
     } else {
-      style.display = value ? el.__vOriginalDisplay : 'none';
+      el.style.display = value ? el.__vOriginalDisplay : 'none';
     }
   },
   unbind: function unbind(el, binding, vnode, oldVnode, isDestroy) {
     if (!isDestroy) {
-      var style = getStyle(el);
-      style.display = el.__vOriginalDisplay;
+      el.style.display = el.__vOriginalDisplay;
     }
   }
 });
