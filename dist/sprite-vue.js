@@ -14151,26 +14151,20 @@ function findColor(context, sprite, prop) {
 }
 
 var contextPool = [],
-    maxPollSize = 20,
-    maxCreated = 50;
+    maxPollSize = 20;
 
 var cacheContextPool = {
-  created: 0,
   get: function get(context) {
     if (contextPool.length > 0) {
       return contextPool.pop();
     }
 
-    var created = this.created;
-    if (created < maxCreated) {
-      var canvas = context.canvas;
-      if (!canvas || !canvas.cloneNode) {
-        return;
-      }
-      var copied = canvas.cloneNode();
-      this.created++;
-      return copied.getContext('2d');
+    var canvas = context.canvas;
+    if (!canvas || !canvas.cloneNode) {
+      return;
     }
+    var copied = canvas.cloneNode();
+    return copied.getContext('2d');
   },
   put: function put() {
     for (var _len = arguments.length, contexts = Array(_len), _key = 0; _key < _len; _key++) {
@@ -14809,7 +14803,7 @@ var BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_19__["deprecate"
       var filter = this.attr('filter'),
           shadow = this.attr('shadow');
 
-      if (cachableContext !== false && !cachableContext) {
+      if ((shadow || filter || cachableContext !== false) && !cachableContext) {
         cachableContext = _helpers_render__WEBPACK_IMPORTED_MODULE_24__["cacheContextPool"].get(drawingContext);
         if (cachableContext) {
           // +2 to solve 1px problem
@@ -14875,6 +14869,8 @@ var BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_19__["deprecate"
         cachableContext.restore();
       }
       drawingContext.restore();
+
+      this[_cachePriority]++;
 
       return drawingContext;
     }
@@ -15289,15 +15285,11 @@ var BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_19__["deprecate"
       this.cacheContext = context;
     },
     get: function get() {
-      var filter = this.attr('filter'),
-          shadow = this.attr('shadow'),
-          _contentSize2 = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_4___default()(this.contentSize, 2),
-          w = _contentSize2[0],
-          h = _contentSize2[1];
-
-
-      if (filter || shadow || this[_cachePriority]++ >= 6 && w * h >= 2500) {
+      if (this[_cachePriority] >= 6) {
         return this.cacheContext;
+      }
+      if (this.cacheContext) {
+        this.cache = null;
       }
       return false;
     }
@@ -26736,7 +26728,7 @@ $export($export.S, 'Object', {
 /* 356 */
 /***/ (function(module) {
 
-module.exports = {"_from":"spritejs@^2.14.0","_id":"spritejs@2.14.0","_inBundle":false,"_integrity":"sha512-DyIsSL9t29DiqWwYMoF+mB4LkpowU6odjMc0olECFDibXjYRDpMDdD3T2rA4xqBXN+pcB39Po+DDWksdeNePYg==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.14.0","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.14.0","saveSpec":null,"fetchSpec":"^2.14.0"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.14.0.tgz","_shasum":"c9e208cd3ba07599e67c2f0a64619757ca4f4d26","_spec":"spritejs@^2.14.0","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.16.0"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^11.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.14.0"};
+module.exports = {"_from":"spritejs@^2.14.1","_id":"spritejs@2.14.1","_inBundle":false,"_integrity":"sha512-y2cHxWX6wKtZTbDQXE8t+r/g5h3kT9OZNn22xYKMZ/snAeMxzfNzhLSNnTU1aP5hQrV2b4xQu5E98T0GydKXKg==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.14.1","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.14.1","saveSpec":null,"fetchSpec":"^2.14.1"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.14.1.tgz","_shasum":"53a1841c66f69bee02678bcb7473e5e6867d1487","_spec":"spritejs@^2.14.1","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.16.2"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^11.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.14.1"};
 
 /***/ }),
 /* 357 */
