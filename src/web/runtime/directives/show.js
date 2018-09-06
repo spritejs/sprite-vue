@@ -38,8 +38,8 @@ export default {
     if (!value === !oldValue) return
     vnode = locateNode(vnode)
     const transition = vnode.data && vnode.data.transition
+    const style = getStyle(el)
     if (transition) {
-      const style = getStyle(el)
       vnode.data.show = true
       if (value) {
         enter(vnode, () => {

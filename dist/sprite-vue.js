@@ -30431,16 +30431,16 @@ function locateNode(vnode) {
     if (!value === !oldValue) return;
     vnode = locateNode(vnode);
     var transition = vnode.data && vnode.data.transition;
+    var style = getStyle(el);
     if (transition) {
-      var _style = getStyle(el);
       vnode.data.show = true;
       if (value) {
         Object(_modules_transition__WEBPACK_IMPORTED_MODULE_0__["enter"])(vnode, function () {
-          _style.display = el.__vOriginalDisplay;
+          style.display = el.__vOriginalDisplay;
         });
       } else {
         Object(_modules_transition__WEBPACK_IMPORTED_MODULE_0__["leave"])(vnode, function () {
-          _style.display = 'none';
+          style.display = 'none';
         });
       }
     } else {
@@ -30449,8 +30449,8 @@ function locateNode(vnode) {
   },
   unbind: function unbind(el, binding, vnode, oldVnode, isDestroy) {
     if (!isDestroy) {
-      var _style2 = getStyle(el);
-      _style2.display = el.__vOriginalDisplay;
+      var style = getStyle(el);
+      style.display = el.__vOriginalDisplay;
     }
   }
 });

@@ -25035,8 +25035,8 @@ function locateNode(vnode) {
     if (!value === !oldValue) return;
     vnode = locateNode(vnode);
     const transition = vnode.data && vnode.data.transition;
+    const style = getStyle(el);
     if (transition) {
-      const style = getStyle(el);
       vnode.data.show = true;
       if (value) {
         Object(_modules_transition__WEBPACK_IMPORTED_MODULE_0__["enter"])(vnode, () => {
