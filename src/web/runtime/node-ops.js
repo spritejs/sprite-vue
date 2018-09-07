@@ -56,6 +56,7 @@ export function createComment (text: string): Comment {
   comment.forceUpdate = () => false
   comment.isVisible = () => false
   comment.__data = new DataNode({ display: 'none' })
+  comment.contains = () => false
   comment.attr = (...args) => {
     return comment.__data.attr(...args)
   }

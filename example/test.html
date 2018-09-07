@@ -20,12 +20,14 @@
 const { Vue } = spritevue
 
 Vue.component('my-scene', {
-  states: {
-    active: {
-      opacity: 1.0
-    },
-    deactive: {
-      opacity: 0.2
+  states() {
+    return {
+      active: {
+        opacity: 1.0
+      },
+      deactive: {
+        opacity: 0.2
+      }
     }
   },
   actions: [
