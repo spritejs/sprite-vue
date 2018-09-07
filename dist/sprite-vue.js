@@ -177,7 +177,7 @@ function compileProto(target) {
       var data = babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_6___default()(exData, _getter.call.apply(_getter, [target].concat(args)));
       return data;
     };
-  } else {
+  } else if (proto.data) {
     var exData = extractStates(target, states, actions);
     proto.data = babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_6___default()({}, proto.data, exData);
   }

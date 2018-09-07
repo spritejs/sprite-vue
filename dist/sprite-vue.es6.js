@@ -139,7 +139,7 @@ function compileProto(target, proto = {}) {
       const data = Object.assign(exData, _getter.call(target, ...args));
       return data;
     };
-  } else {
+  } else if (proto.data) {
     const exData = extractStates(target, states, actions);
     proto.data = Object.assign({}, proto.data, exData);
   }
