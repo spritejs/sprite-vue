@@ -111,7 +111,6 @@ _vue_ex__WEBPACK_IMPORTED_MODULE_0__["default"].component('s-transition', _compo
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return _default; });
 /* harmony import */ var web_entry_runtime_with_compiler__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(2);
 
 
@@ -129,18 +128,18 @@ function extractStates(target, states, actions) {
   return Object.assign({}, states, actions);
 }
 
-function compileProto(target, proto = {}) {
+function compileProto(proto = {}) {
   const { states, actions } = proto;
 
   if (typeof proto.data === 'function') {
     const _getter = proto.data;
     proto.data = function (...args) {
-      const exData = extractStates(target, states, actions);
-      const data = Object.assign(exData, _getter.call(target, ...args));
+      const exData = extractStates(this, states, actions);
+      const data = Object.assign(exData, _getter.call(this, ...args));
       return data;
     };
   } else if (proto.data) {
-    const exData = extractStates(target, states, actions);
+    const exData = extractStates(null, states, actions);
     proto.data = Object.assign({}, proto.data, exData);
   }
 
@@ -150,16 +149,12 @@ function compileProto(target, proto = {}) {
   return proto;
 }
 
-let _default = class _default extends web_entry_runtime_with_compiler__WEBPACK_IMPORTED_MODULE_0__["default"] {
-  static component(name, proto) {
-    return super.component(name, compileProto(this, proto));
-  }
-  constructor(proto) {
-    super(compileProto(proto, proto));
-  }
+const _component = web_entry_runtime_with_compiler__WEBPACK_IMPORTED_MODULE_0__["default"].component;
+web_entry_runtime_with_compiler__WEBPACK_IMPORTED_MODULE_0__["default"].component = function (name, proto) {
+  return _component.call(web_entry_runtime_with_compiler__WEBPACK_IMPORTED_MODULE_0__["default"], name, compileProto(proto));
 };
 
-
+/* harmony default export */ __webpack_exports__["default"] = (web_entry_runtime_with_compiler__WEBPACK_IMPORTED_MODULE_0__["default"]);
 
 /***/ }),
 /* 2 */

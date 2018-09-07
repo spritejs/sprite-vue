@@ -14,18 +14,18 @@ function extractStates (target, states, actions) {
   return Object.assign({}, states, actions)
 }
 
-function compileProto (target, proto = {}) {
+function compileProto (proto = {}) {
   const { states, actions } = proto
 
   if (typeof proto.data === 'function') {
     const _getter = proto.data
     proto.data = function (...args) {
-      const exData = extractStates(target, states, actions)
-      const data = Object.assign(exData, _getter.call(target, ...args))
+      const exData = extractStates(this, states, actions)
+      const data = Object.assign(exData, _getter.call(this, ...args))
       return data
     }
   } else if (proto.data) {
-    const exData = extractStates(target, states, actions)
+    const exData = extractStates(null, states, actions)
     proto.data = Object.assign({}, proto.data, exData)
   }
 
@@ -35,11 +35,9 @@ function compileProto (target, proto = {}) {
   return proto
 }
 
-export default class extends Vue {
-  static component (name, proto) {
-    return super.component(name, compileProto(this, proto))
-  }
-  constructor (proto) {
-    super(compileProto(proto, proto))
-  }
+const _component = Vue.component
+Vue.component = function (name, proto) {
+  return _component.call(Vue, name, compileProto(proto))
 }
+
+export default Vue
