@@ -20,6 +20,23 @@
 const { Vue } = spritevue
 
 Vue.component('my-scene', {
+  states: {
+    active: {
+      opacity: 1.0
+    },
+    deactive: {
+      opacity: 0.2
+    }
+  },
+  actions: [
+    {
+      both: ['active', 'deactive'],
+      action: {
+        duration: 1000,
+        easing: 'ease-in-out'
+      }
+    }
+  ],
   data () {
     return {
       viewport: [600, 600],
@@ -28,25 +45,11 @@ Vue.component('my-scene', {
         { id: 'stop-btn', bgcolor: 'red', state: 'deactive' },
         { id: 'warn-btn', bgcolor: '#fc0', state: 'deactive' },
         { id: 'pass-btn', bgcolor: 'green', state: 'deactive' }
-      ],
-      states: {
-        active: {
-          opacity: 1.0
-        },
-        deactive: {
-          opacity: 0.2
-        }
-      },
-      actions: [
-        {
-          both: ['active', 'deactive'],
-          action: {
-            duration: 1000,
-            easing: 'ease-in-out'
-          }
-        }
       ]
     }
+  },
+  mounted() {
+    console.log(this.$refs)
   },
   methods: {
     enter (index) {
@@ -69,6 +72,8 @@ Vue.component('my-scene', {
       <layer id="fglayer">
         <group width="500" display="flex" y="100" justifyContent="space-between" bgcolor="grey">
           <sprite v-if="index < 2" v-for="(item, index) in items" :size="[50, 50]"
+            :key="'sp'+index"
+            ref="sp"
             :bgcolor="item.bgcolor"
             v-on:mouseenter="enter(index)"
             v-on:mouseleave="leave(index)"
@@ -85,7 +90,7 @@ const v = new Vue({
   el: '#app',
   data() {
     return {
-      state: false
+      state: true,
     };
   },
   methods: {

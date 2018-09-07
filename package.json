@@ -1,6 +1,6 @@
 {
   "name": "sprite-vue",
-  "version": "0.6.6",
+  "version": "0.6.7",
   "description": "A Vue.js project for SpriteJS",
   "author": "akira-cn <akira.cn@gmail.com>",
   "main": "src/index.js",
@@ -14,7 +14,8 @@
   },
   "dependencies": {
     "babel-decorators-runtime": "^0.2.0",
-    "spritejs": "^2.14.3",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "spritejs": "^2.14.4",
     "vue": "^2.5.17"
   },
   "devDependencies": {

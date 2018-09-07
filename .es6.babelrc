@@ -2,5 +2,5 @@
   "presets": [
     "flow-vue"
   ],
-  "plugins": ["transform-decorators-runtime"]
+  "plugins": ["transform-decorators-runtime", "transform-class-properties"]
 }
