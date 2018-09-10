@@ -57,6 +57,8 @@ export function createComment (text: string): Comment {
   comment.isVisible = () => false
   comment.__data = new DataNode({ display: 'none' })
   comment.contains = () => false
+  comment.enter = () => comment
+  comment.exit = () => comment
   comment.attr = (...args) => {
     return comment.__data.attr(...args)
   }
