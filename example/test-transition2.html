@@ -23,7 +23,7 @@ Vue.component('my-scene', {
   data () {
     return {
       viewport: [600, 600],
-      selected: 0,
+      selected: true,
       color: 'red'
     }
   },
@@ -32,19 +32,19 @@ Vue.component('my-scene', {
   },
   methods: {
     toggle () {
-      this.selected = (this.selected + 1) % 3
-      // this.color = 'orange'
+      this.selected = !this.selected
     }
   },
   template: `
     <scene id="container" :viewport=viewport>
       <layer id="fglayer" @click="toggle">
-        <s-transition :enter="['slide-in-top', 600]" exit="slide-out-left" show="fade-in" hide="fade-out">
-          <sprite v-show="selected===0" :attrs="{x: 100, y: 100, size: [100, 100], bgcolor: color, id: 'a'}"
+        <s-transition v-if="selected" :enter="['slide-in-top', 200]" exit="slide-out-right"
+          enterMode="onebyone" exitMode="onebyone-reverse">
+          <sprite :attrs="{x: 100, y: 100, size: [100, 100], bgcolor: color, id: 'a'}"
             ></sprite>
-          <sprite v-show="selected===1" :attrs="{x: 300, y: 100, size: [100, 100], bgcolor: 'green', id: 'b'}"
+          <sprite :attrs="{x: 300, y: 100, size: [100, 100], bgcolor: 'green', id: 'b'}"
            ></sprite>
-          <sprite v-show="selected===2" :attrs="{x: 500, y: 100, size: [100, 100], bgcolor: 'blue', id: 'c'}"
+          <sprite :attrs="{x: 500, y: 100, size: [100, 100], bgcolor: 'blue', id: 'c'}"
            ></sprite>
         </s-transition>
       </layer>

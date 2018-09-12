@@ -10467,6 +10467,7 @@ var Timeline = function () {
             id = _ref5[0],
             timer = _ref5[1];
 
+        if (!timers.has(id)) return; // Need check because it maybe clearTimeout by former handler().
         var _timer$time = timer.time,
             isEntropy = _timer$time.isEntropy,
             delay = _timer$time.delay,
@@ -14349,7 +14350,10 @@ var _attr = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_18___default()
     _effects = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_18___default()('effects'),
     _flow = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_18___default()('flow'),
     _changeStateAction = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_18___default()('changeStateAction'),
-    _resolveState = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_18___default()('resolveState');
+    _resolveState = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_18___default()('resolveState'),
+    _show = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_18___default()('show'),
+    _hide = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_18___default()('hide'),
+    _enter = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_18___default()('enter');
 
 var BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_21__["deprecate"])('Instead use sprite.cache = null'), (_class = (_temp = _class2 = function (_BaseNode) {
   babel_runtime_helpers_inherits__WEBPACK_IMPORTED_MODULE_17___default()(BaseSprite, _BaseNode);
@@ -15044,15 +15048,23 @@ var BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_21__["deprecate"
     }
   }, {
     key: 'resolveStates',
-    value: function resolveStates() {
+    value: function resolveStates(states, before, after) {
       var _this6 = this;
-
-      for (var _len = arguments.length, states = Array(_len), _key = 0; _key < _len; _key++) {
-        states[_key] = arguments[_key];
-      }
 
       var currentAnimation = null,
           resolved = false;
+
+      var _states = [];
+      var prev = null;
+      for (var i = 0; i < states.length; i++) {
+        var s = states[i];
+        if (prev !== s) {
+          prev = s;
+          _states.push(s);
+        }
+      }
+      states = _states;
+
       var _resolveStates = function _resolveStates() {
         _this6.__ignoreAction = false;
         var fromState = _this6.attr('state');
@@ -15069,6 +15081,7 @@ var BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_21__["deprecate"
                 // lastState
                 delete _this6[_resolveState];
               }
+              if (after) after.call(_this6, states);
               resolve(_this6);
             });
             _this6.once('state-from-' + fromState, function (_ref11) {
@@ -15109,7 +15122,8 @@ var BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_21__["deprecate"
         rs.resolve();
         this.__ignoreAction = true;
         var promise = rs.promise.then(function () {
-          return _resolveStates();
+          if (before) before.call(_this6, states);
+          return _resolveStates().promise;
         });
         return {
           promise: promise,
@@ -15120,6 +15134,7 @@ var BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_21__["deprecate"
           }
         };
       }
+      if (before) before.call(this, states);
       return _resolveStates();
     }
 
@@ -15130,16 +15145,38 @@ var BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_21__["deprecate"
     value: function show() {
       var _this7 = this;
 
+      if (this[_show]) return this[_show];
+
       var originalDisplay = this.attr('_originalDisplay') || '';
       var originalState = this.attr('_originalState') || 'default';
 
       var states = this.attr('states');
 
       if (states.show) {
-        this.once('state-from-hide', function () {
-          _this7.attr('display', originalDisplay);
+        var state = this.attr('state');
+        if (state === 'hide') {
+          this.once('state-from-hide', function () {
+            _this7.attr('display', originalDisplay);
+          });
+        }
+        var _st = ['show', originalState];
+        if (states.beforeShow) {
+          _st.unshift('beforeShow');
+        }
+        var deferred = this.resolveStates(_st);
+        deferred.promise = deferred.promise.then(function () {
+          if (!_this7[_hide]) {
+            delete _this7[_attr]._originalDisplay;
+            delete _this7[_attr]._originalState;
+            if (states.show.__default) {
+              delete states.show;
+              _this7.attr('states', states);
+            }
+          }
+          delete _this7[_show];
         });
-        return this.resolveStates('show', originalState);
+        this[_show] = deferred;
+        return deferred;
       }
 
       this.attr('state', originalState);
@@ -15151,27 +15188,42 @@ var BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_21__["deprecate"
     value: function hide() {
       var _this8 = this;
 
-      var _originalDisplay = this.attr('display');
-      var _originalState = this.attr('state');
-      this.attr({
-        _originalDisplay: _originalDisplay,
-        _originalState: _originalState
-      });
+      var state = this.attr('state');
+      if (this[_hide] || state === 'hide') return this[_hide];
+      var _originalDisplay = this.attr('_originalDisplay');
+      if (_originalDisplay == null) {
+        var display = this.attr('display');
+
+        this.attr({
+          _originalDisplay: display !== 'none' ? display : '',
+          _originalState: state !== 'hide' ? state : 'default'
+        });
+      }
 
       var states = this.attr('states');
 
       if (states.hide) {
-        if (!states.show || states.show.__default) {
+        if (!states.show) {
           var beforeHide = { __default: true };
+          if (states.beforeShow) {
+            babel_runtime_core_js_object_keys__WEBPACK_IMPORTED_MODULE_2___default()(states.beforeShow).forEach(function (key) {
+              beforeHide[key] = _this8.attr(key);
+            });
+          }
           babel_runtime_core_js_object_keys__WEBPACK_IMPORTED_MODULE_2___default()(states.hide).forEach(function (key) {
             beforeHide[key] = _this8.attr(key);
           });
           states.show = beforeHide;
+          this.attr('states', states);
         }
-        return this.resolveStates('show', 'hide').promise.then(function () {
+        var deferred = this.resolveStates(['show', 'hide']);
+        deferred.promise = deferred.promise.then(function () {
           _this8.attr('display', 'none');
+          delete _this8[_hide];
           return _this8;
         });
+        this[_hide] = deferred;
+        return deferred;
       }
 
       this.attr('state', 'hide');
@@ -15186,20 +15238,24 @@ var BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_21__["deprecate"
       var states = this.attr('states');
       var ret = void 0;
       if (states && (states.beforeEnter || states.afterEnter)) {
-        var state = this.attr('state');
-        if (state !== 'beforeEnter' && state !== 'afterEnter' && (!states.afterEnter || states.afterEnter.__default)) {
-          var afterEnter = { __default: true };
-          babel_runtime_core_js_object_keys__WEBPACK_IMPORTED_MODULE_2___default()(states.beforeEnter).forEach(function (key) {
-            afterEnter[key] = _this9.attr(key);
-          });
-          states.afterEnter = afterEnter;
-        }
-        var deferred = this.resolveStates('beforeEnter', 'afterEnter', toState || state);
+        var deferred = this.resolveStates(['beforeEnter', 'afterEnter'], function (_states) {
+          var state = _this9.attr('state');
+          _states.push(toState || state);
+          if (state !== 'beforeEnter' && state !== 'afterEnter' && (!states.afterEnter || states.afterEnter.__default)) {
+            var afterEnter = { __default: true };
+            babel_runtime_core_js_object_keys__WEBPACK_IMPORTED_MODULE_2___default()(states.beforeEnter).forEach(function (key) {
+              afterEnter[key] = _this9.attr(key);
+            });
+            states.afterEnter = afterEnter;
+            _this9.attr('states', states);
+          }
+        });
         ret = deferred;
       } else {
         ret = babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_16___default()(BaseSprite.prototype.__proto__ || babel_runtime_core_js_object_get_prototype_of__WEBPACK_IMPORTED_MODULE_12___default()(BaseSprite.prototype), 'enter', this).call(this);
       }
 
+      this[_enter] = ret;
       if (this.children) {
         var enterMode = this.attr('enterMode');
         if (enterMode === 'onebyone' || enterMode === 'onebyone-reverse') {
@@ -15216,15 +15272,17 @@ var BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_21__["deprecate"
             children = [].concat(babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_5___default()(children)).reverse();
           }
 
+          var currentTask = ret;
           children.forEach(function (c) {
             var states = c.attr('states');
             if (states && (states.beforeEnter || states.afterEnter)) {
               if (!states.afterEnter || states.afterEnter.__default) {
-                var _afterEnter = { __default: true };
+                var afterEnter = { __default: true };
                 babel_runtime_core_js_object_keys__WEBPACK_IMPORTED_MODULE_2___default()(states.beforeEnter).forEach(function (key) {
-                  _afterEnter[key] = c.attr(key);
+                  afterEnter[key] = c.attr(key);
                 });
-                states.afterEnter = _afterEnter;
+                states.afterEnter = afterEnter;
+                c.attr('states', states);
               }
             }
             var toState = c.attr('state');
@@ -15232,46 +15290,50 @@ var BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_21__["deprecate"
             promise = promise.then(function () {
               var d = c.enter(toState);
               if (d.promise) {
-                if (resolved && d.resolve) d.resolve();
+                currentTask = d;
+                if (resolved && d.resolve) {
+                  d.resolve();
+                }
                 return d.promise;
               }
               return d;
             });
           });
 
-          return {
+          this[_enter] = {
             promise: promise,
             resolve: function resolve() {
+              if (currentTask && currentTask.resolve) currentTask.resolve();
               resolved = true;
             }
           };
-        }
-
-        var entries = this.children.map(function (c) {
-          return c.enter();
-        }).filter(function (d) {
-          return d.promise;
-        });
-        if (ret.promise) {
-          entries.unshift(ret);
-        }
-        if (entries.length) {
-          var _deferred = {
-            promise: babel_runtime_core_js_promise__WEBPACK_IMPORTED_MODULE_3___default.a.all(entries.map(function (d) {
-              return d.promise;
-            })),
-            resolve: function resolve() {
-              entries.forEach(function (d) {
-                return d.resolve();
-              });
-              return _this9.promise;
-            }
-          };
-          return _deferred;
+        } else {
+          var entries = this.children.map(function (c) {
+            return c.enter();
+          }).filter(function (d) {
+            return d.promise;
+          });
+          if (ret.promise) {
+            entries.unshift(ret);
+          }
+          if (entries.length) {
+            var _deferred = {
+              promise: babel_runtime_core_js_promise__WEBPACK_IMPORTED_MODULE_3___default.a.all(entries.map(function (d) {
+                return d.promise;
+              })),
+              resolve: function resolve() {
+                entries.forEach(function (d) {
+                  return d.resolve();
+                });
+                return _this9.promise;
+              }
+            };
+            this[_enter] = _deferred;
+          }
         }
       }
 
-      return ret;
+      return this[_enter];
     }
   }, {
     key: 'exit',
@@ -15280,106 +15342,135 @@ var BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_21__["deprecate"
 
       var onbyone = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
-      var states = this.attr('states');
-      var ret = void 0;
-      var afterEnter = states.afterEnter || {};
-      if (states && (states.beforeExit || states.afterExit)) {
-        var state = this.attr('state');
-        if (state !== 'beforeExit' && state !== 'afterExit' && (!states.beforeExit || states.beforeExit.__default)) {
-          states.beforeExit = babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_9___default()({}, afterEnter);
-          states.beforeExit.__default = true;
-        }
-        var deferred = this.resolveStates('beforeExit', 'afterExit');
-        deferred.promise.then(function () {
-          if (!onbyone) {
-            _this10.attr(afterEnter);
-            _this10[_attr].quietSet('state', toState || state);
-          }
-          return _this10;
-        });
-        ret = deferred;
-      } else {
-        ret = babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_16___default()(BaseSprite.prototype.__proto__ || babel_runtime_core_js_object_get_prototype_of__WEBPACK_IMPORTED_MODULE_12___default()(BaseSprite.prototype), 'exit', this).call(this);
-        this.attr(afterEnter);
-      }
-
-      if (this.children) {
-        var exitMode = this.attr('exitMode');
-        if (exitMode === 'onebyone' || exitMode === 'onebyone-reverse') {
-          var promise = babel_runtime_core_js_promise__WEBPACK_IMPORTED_MODULE_3___default.a.resolve(this);
-          var resolved = false;
-
-          var children = this.children;
-          if (exitMode === 'onebyone-reverse') {
-            children = [].concat(babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_5___default()(children)).reverse();
-          }
-
-          children.forEach(function (c) {
-            var states = c.attr('states');
-            if (states && (states.beforeExit || states.afterExit)) {
-              if (!states.beforeExit || states.beforeExit.__default) {
-                states.beforeExit = babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_9___default()({}, afterEnter);
-                states.beforeExit.__default = true;
-              }
+      var _exit = function _exit() {
+        var states = _this10.attr('states');
+        var ret = void 0;
+        var afterEnter = states.afterEnter || {};
+        if (states && (states.beforeExit || states.afterExit)) {
+          var state = void 0;
+          var deferred = _this10.resolveStates(['beforeExit', 'afterExit'], function () {
+            state = _this10.attr('state');
+            if (state !== 'beforeExit' && state !== 'afterExit' && (!states.beforeExit || states.beforeExit.__default)) {
+              states.beforeExit = babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_9___default()({}, afterEnter);
+              states.beforeExit.__default = true;
+              _this10.attr('states', states);
             }
-            var toState = c.attr('state');
-            c.attr('state', 'beforeExit');
+          });
+          deferred.promise.then(function () {
+            if (!onbyone) {
+              _this10.attr(afterEnter);
+              _this10[_attr].quietSet('state', toState || state);
+            }
+            return _this10;
+          });
+          ret = deferred;
+        } else {
+          ret = babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_16___default()(BaseSprite.prototype.__proto__ || babel_runtime_core_js_object_get_prototype_of__WEBPACK_IMPORTED_MODULE_12___default()(BaseSprite.prototype), 'exit', _this10).call(_this10);
+          _this10.attr(afterEnter);
+        }
+
+        if (_this10.children) {
+          var exitMode = _this10.attr('exitMode');
+          if (exitMode === 'onebyone' || exitMode === 'onebyone-reverse') {
+            var promise = babel_runtime_core_js_promise__WEBPACK_IMPORTED_MODULE_3___default.a.resolve(_this10);
+            var resolved = false;
+
+            var children = _this10.children;
+            if (exitMode === 'onebyone-reverse') {
+              children = [].concat(babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_5___default()(children)).reverse();
+            }
+
+            var currentTask = null;
+            children.forEach(function (c) {
+              var states = c.attr('states');
+              if (states && (states.beforeExit || states.afterExit)) {
+                if (!states.beforeExit || states.beforeExit.__default) {
+                  states.beforeExit = babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_9___default()({}, afterEnter);
+                  states.beforeExit.__default = true;
+                  c.attr('states', states);
+                }
+              }
+              var toState = c.attr('state');
+              c.attr('state', 'beforeExit');
+              promise = promise.then(function () {
+                var d = c.exit(toState, true);
+                if (d.promise) {
+                  currentTask = d;
+                  if (resolved && d.resolve) d.resolve();
+                  return d.promise;
+                }
+                return d;
+              });
+              c.__toState = toState;
+            });
+
             promise = promise.then(function () {
-              var d = c.exit(toState, true);
-              if (d.promise) {
-                if (resolved && d.resolve) d.resolve();
-                return d.promise;
+              var p = ret.promise || babel_runtime_core_js_promise__WEBPACK_IMPORTED_MODULE_3___default.a.resolve(_this10);
+              currentTask = ret;
+              return p.then(function () {
+                _this10.children.forEach(function (c) {
+                  var states = c.attr('states');
+                  c.attr(states.afterEnter);
+                  c[_attr].quietSet('state', c.__toState);
+                  delete c.__toState;
+                });
+              });
+            });
+
+            return {
+              promise: promise,
+              resolve: function resolve() {
+                if (currentTask && currentTask.resolve) currentTask.resolve();
+                resolved = true;
               }
-              return d;
-            });
-            c.__toState = toState;
-          });
+            };
+          }
 
-          promise = promise.then(function () {
-            var p = ret.promise || babel_runtime_core_js_promise__WEBPACK_IMPORTED_MODULE_3___default.a.resolve(_this10);
-            return p.then(function () {
-              _this10.children.forEach(function (c) {
-                var states = c.attr('states');
-                c.attr(states.afterEnter);
-                c[_attr].quietSet('state', c.__toState);
-                delete c.__toState;
-              });
-            });
+          var exites = _this10.children.map(function (c) {
+            return c.exit();
+          }).filter(function (d) {
+            return d.promise;
           });
-
-          return {
-            promise: promise,
-            resolve: function resolve() {
-              resolved = true;
-            }
-          };
+          if (ret.promise) {
+            exites.unshift(ret);
+          }
+          if (exites.length) {
+            var _deferred2 = {
+              promise: babel_runtime_core_js_promise__WEBPACK_IMPORTED_MODULE_3___default.a.all(exites.map(function (d) {
+                return d.promise;
+              })),
+              resolve: function resolve() {
+                exites.forEach(function (d) {
+                  return d.resolve();
+                });
+                return _this10.promise;
+              }
+            };
+            return _deferred2;
+          }
         }
 
-        var exites = this.children.map(function (c) {
-          return c.exit();
-        }).filter(function (d) {
-          return d.promise;
+        return ret;
+      };
+
+      if (this[_enter] && this[_enter].promise) {
+        var resolved = false;
+        this[_enter].resolve();
+        var promise = this[_enter].promise.then(function () {
+          var deferred = _exit();
+          if (resolved && deferred.resolve) {
+            deferred.resolve();
+          }
+          return deferred.promise;
         });
-        if (ret.promise) {
-          exites.unshift(ret);
-        }
-        if (exites.length) {
-          var _deferred2 = {
-            promise: babel_runtime_core_js_promise__WEBPACK_IMPORTED_MODULE_3___default.a.all(exites.map(function (d) {
-              return d.promise;
-            })),
-            resolve: function resolve() {
-              exites.forEach(function (d) {
-                return d.resolve();
-              });
-              return _this10.promise;
-            }
-          };
-          return _deferred2;
-        }
+        return {
+          promise: promise,
+          resolve: function resolve() {
+            resolved = true;
+          }
+        };
       }
-
-      return ret;
+      return _exit();
     }
   }, {
     key: 'layer',
@@ -16312,6 +16403,11 @@ var SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["deprecate"
         ':hide': {
           duration: 300,
           easing: 'ease-out'
+        },
+        'hide:beforeShow': 'none',
+        'beforeShow:': {
+          duration: 300,
+          easing: 'ease-in'
         }
       },
       enterMode: 'normal',
@@ -16972,6 +17068,18 @@ var SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["deprecate"
   }, {
     key: 'states',
     set: function set(val) {
+      val = babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_8___default()({}, val);
+      var states = this.get('states');
+      // recover __default
+      babel_runtime_core_js_object_entries__WEBPACK_IMPORTED_MODULE_7___default()(states).forEach(function (_ref8) {
+        var _ref9 = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_6___default()(_ref8, 2),
+            key = _ref9[0],
+            value = _ref9[1];
+
+        if (value.__default && !(key in val)) {
+          val[key] = value;
+        }
+      });
       this.quietSet('states', val);
     }
   }, {
@@ -17029,7 +17137,7 @@ var SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["deprecate"
               actions = this.actions;
           if (actions) {
             action = !subject.__ignoreAction && (actions[oldState + ':' + val] || actions[':' + val] || actions[oldState + ':']);
-            if (action) {
+            if (action && action !== 'none') {
               var animation = subject.changeState(fromState, toState, action);
               var tag = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_13___default()('tag');
               animation.tag = tag;
@@ -17050,7 +17158,7 @@ var SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["deprecate"
             }
           }
         }
-        if (!action || subject.__ignoreAction) {
+        if (!action || action === 'none' || subject.__ignoreAction) {
           subject.dispatchEvent('state-from-' + oldState, { from: oldState, to: val }, true, true);
           if (toState) subject.attr(toState);
           subject.dispatchEvent('state-to-' + val, { from: oldState, to: val }, true, true);
@@ -26560,7 +26668,7 @@ var _default = function (_BaseNode) {
             return that.layer(name);
           },
 
-          documentElement: document
+          documentElement: typeof document !== 'undefined' ? document : null
         };
       }
     });
@@ -27276,7 +27384,7 @@ $export($export.S, 'Object', {
 /* 357 */
 /***/ (function(module) {
 
-module.exports = {"_from":"spritejs@^2.15.0","_id":"spritejs@2.15.0","_inBundle":false,"_integrity":"sha512-I7TnzIJKFNA70kC/FQMIMLwnPryIG0LtHdCj+2s7apBUFPIdXkzTBsFA52WwvBg4swv9ZpwOJPdoa10ukwuC5A==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.15.0","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.15.0","saveSpec":null,"fetchSpec":"^2.15.0"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.15.0.tgz","_shasum":"f5fab38183fe120c65215692039aa9209fb6cdde","_spec":"spritejs@^2.15.0","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.17.5"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^11.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.15.0"};
+module.exports = {"_from":"spritejs@^2.15.6","_id":"spritejs@2.15.6","_inBundle":false,"_integrity":"sha512-X23cDbKi6hhMcf4LzzD4Je8lByx02xwkExgWoDEVQXyXGEpljs6VXTRC2+5R037boMg70C/XGkqjIloyuhTeYQ==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.15.6","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.15.6","saveSpec":null,"fetchSpec":"^2.15.6"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.15.6.tgz","_shasum":"f8eeff755e6ff97ffcee2064fb7a81574d4f584b","_spec":"spritejs@^2.15.6","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.17.11"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^11.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.15.6"};
 
 /***/ }),
 /* 358 */
@@ -27461,8 +27569,8 @@ function parentNode(node) {
 function nextSibling(node) {
   if (node instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["BaseNode"]) {
     if (node.parent) {
-      var idx = node.parent.indexOf(node);
-      return node.parent[idx + 1];
+      var idx = node.parent.children.indexOf(node);
+      return node.parent.children[idx + 1];
     }
     return null;
   }
@@ -30945,7 +31053,12 @@ function trigger(el, type) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _modules_transition__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(376);
+/* harmony import */ var babel_runtime_core_js_object_keys__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(49);
+/* harmony import */ var babel_runtime_core_js_object_keys__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_core_js_object_keys__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _modules_transition__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(376);
+/* harmony import */ var spritejs__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(214);
+
+
 
 
 function getStyle(el) {
@@ -30966,15 +31079,31 @@ function locateNode(vnode) {
     vnode = locateNode(vnode);
     var transition = vnode.data && vnode.data.transition;
     var style = getStyle(el);
-
-    var originalDisplay = el.__vOriginalDisplay = style.display === 'none' ? '' : style.display;
-    if (value && transition) {
-      vnode.data.show = true;
-      Object(_modules_transition__WEBPACK_IMPORTED_MODULE_0__["enter"])(vnode, function () {
-        style.display = originalDisplay;
-      });
+    if (el instanceof spritejs__WEBPACK_IMPORTED_MODULE_2__["BaseNode"]) {
+      var states = style.states;
+      if (!value && states.hide) {
+        var beforeHide = { __default: true };
+        babel_runtime_core_js_object_keys__WEBPACK_IMPORTED_MODULE_0___default()(states.hide).forEach(function (key) {
+          beforeHide[key] = style[key];
+        });
+        states.show = beforeHide;
+        el.attr(states.hide);
+      }
+      if (!value) {
+        style.display = 'none';
+        style.quietSet('state', 'hide');
+      }
+      // if (value) el.show()
     } else {
-      style.display = value ? originalDisplay : 'none';
+      var originalDisplay = el.__vOriginalDisplay = style.display === 'none' ? '' : style.display;
+      if (value && transition) {
+        vnode.data.show = true;
+        Object(_modules_transition__WEBPACK_IMPORTED_MODULE_1__["enter"])(vnode, function () {
+          style.display = originalDisplay;
+        });
+      } else {
+        style.display = value ? originalDisplay : 'none';
+      }
     }
   },
   update: function update(el, _ref2, vnode) {
@@ -30986,19 +31115,23 @@ function locateNode(vnode) {
     vnode = locateNode(vnode);
     var transition = vnode.data && vnode.data.transition;
     var style = getStyle(el);
-    if (transition) {
-      vnode.data.show = true;
-      if (value) {
-        Object(_modules_transition__WEBPACK_IMPORTED_MODULE_0__["enter"])(vnode, function () {
-          style.display = el.__vOriginalDisplay;
-        });
-      } else {
-        Object(_modules_transition__WEBPACK_IMPORTED_MODULE_0__["leave"])(vnode, function () {
-          style.display = 'none';
-        });
-      }
+    if (el instanceof spritejs__WEBPACK_IMPORTED_MODULE_2__["BaseNode"]) {
+      if (value) el.show();else el.hide();
     } else {
-      style.display = value ? el.__vOriginalDisplay : 'none';
+      if (transition) {
+        vnode.data.show = true;
+        if (value) {
+          Object(_modules_transition__WEBPACK_IMPORTED_MODULE_1__["enter"])(vnode, function () {
+            style.display = el.__vOriginalDisplay;
+          });
+        } else {
+          Object(_modules_transition__WEBPACK_IMPORTED_MODULE_1__["leave"])(vnode, function () {
+            style.display = 'none';
+          });
+        }
+      } else {
+        style.display = value ? el.__vOriginalDisplay : 'none';
+      }
     }
   },
   unbind: function unbind(el, binding, vnode, oldVnode, isDestroy) {
@@ -34164,10 +34297,264 @@ var shouldDecodeNewlinesForHref = core_util_index__WEBPACK_IMPORTED_MODULE_0__["
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ({
-  data: function data() {},
+/* harmony import */ var babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(2);
+/* harmony import */ var babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var babel_runtime_helpers_toArray__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(253);
+/* harmony import */ var babel_runtime_helpers_toArray__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_helpers_toArray__WEBPACK_IMPORTED_MODULE_1__);
 
-  template: "\n    <group>\n      <slot></slot>\n    </group>\n  "
+
+var Transitions = {
+  'fade-in': function fadeIn() {
+    var duration = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 300;
+    var easing = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'ease-in';
+
+    return {
+      from: {
+        opacity: 0
+      },
+      action: {
+        duration: duration,
+        easing: easing
+      }
+    };
+  },
+  'fade-out': function fadeOut() {
+    var duration = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 300;
+    var easing = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'ease-out';
+
+    return {
+      to: {
+        opacity: 0
+      },
+      action: {
+        duration: duration,
+        easing: easing
+      }
+    };
+  },
+  'slide-in-top': function slideInTop() {
+    var duration = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 300;
+    var easing = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'ease-in';
+    var distance = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 300;
+
+    return {
+      from: {
+        translate: [0, -distance],
+        opacity: 0
+      },
+      action: {
+        duration: duration,
+        easing: easing
+      }
+    };
+  },
+  'slide-in-right': function slideInRight() {
+    var duration = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 300;
+    var easing = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'ease-in';
+    var distance = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 300;
+
+    return {
+      from: {
+        translate: [distance, 0],
+        opacity: 0
+      },
+      action: {
+        duration: duration,
+        easing: easing
+      }
+    };
+  },
+  'slide-in-bottom': function slideInBottom() {
+    var duration = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 300;
+    var easing = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'ease-in';
+    var distance = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 300;
+
+    return {
+      from: {
+        translate: [0, distance],
+        opacity: 0
+      },
+      action: {
+        duration: duration,
+        easing: easing
+      }
+    };
+  },
+  'slide-in-left': function slideInLeft() {
+    var duration = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 300;
+    var easing = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'ease-in';
+    var distance = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 300;
+
+    return {
+      from: {
+        translate: [-distance, 0],
+        opacity: 0
+      },
+      action: {
+        duration: duration,
+        easing: easing
+      }
+    };
+  },
+  'slide-out-top': function slideOutTop() {
+    var duration = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 300;
+    var easing = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'ease-in';
+    var distance = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 300;
+
+    return {
+      to: {
+        translate: [0, -distance],
+        opacity: 0
+      },
+      action: {
+        duration: duration,
+        easing: easing
+      }
+    };
+  },
+  'slide-out-right': function slideOutRight() {
+    var duration = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 300;
+    var easing = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'ease-in';
+    var distance = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 300;
+
+    return {
+      to: {
+        translate: [distance, 0],
+        opacity: 0
+      },
+      action: {
+        duration: duration,
+        easing: easing
+      }
+    };
+  },
+  'slide-out-bottom': function slideOutBottom() {
+    var duration = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 300;
+    var easing = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'ease-in';
+    var distance = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 300;
+
+    return {
+      to: {
+        translate: [0, distance],
+        opacity: 0
+      },
+      action: {
+        duration: duration,
+        easing: easing
+      }
+    };
+  },
+  'slide-out-left': function slideOutLeft() {
+    var duration = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 300;
+    var easing = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'ease-in';
+    var distance = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 300;
+
+    return {
+      to: {
+        translate: [-distance, 0],
+        opacity: 0
+      },
+      action: {
+        duration: duration,
+        easing: easing
+      }
+    };
+  }
+};
+
+function getTransition(option) {
+  var transition = option;
+  if (typeof option === 'string') {
+    transition = Transitions[option]();
+  } else if (Array.isArray(option)) {
+    // [name, time, easing]
+    var _option = babel_runtime_helpers_toArray__WEBPACK_IMPORTED_MODULE_1___default()(option),
+        name = _option[0],
+        args = _option.slice(1);
+
+    transition = Transitions[name](args);
+  }
+  return transition;
+}
+
+/* harmony default export */ __webpack_exports__["default"] = ({
+  props: ['enter', 'exit', 'show', 'hide', 'enterMode', 'exitMode'],
+  render: function render(createElement) {
+    var children = this.$slots.default;
+    var enter = this.enter,
+        exit = this.exit,
+        show = this.show,
+        hide = this.hide,
+        enterMode = this.enterMode,
+        exitMode = this.exitMode;
+
+    children.forEach(function (child) {
+      if (child.data && child.data.attrs) {
+        var attrs = child.data.attrs;
+        var states = {};
+        var actions = {};
+        if (enter) {
+          var transition = getTransition(enter);
+          if (transition) {
+            states.beforeEnter = transition.from;
+            if (transition.to) {
+              states.afterEnter = transition.to;
+            }
+            actions['beforeEnter:'] = transition.action;
+          }
+          // if (!child.key) {
+          //   child.key = `_key${Math.random()}`
+          // }
+        }
+        if (exit) {
+          var _transition = getTransition(exit);
+          if (_transition) {
+            states.afterExit = _transition.to;
+            if (_transition.from) {
+              states.beforeExit = _transition.from;
+            }
+          }
+          // if (!child.key) {
+          //   child.key = `_key${Math.random()}`
+          // }
+        }
+        if (show) {
+          var _transition2 = getTransition(show);
+          if (_transition2) {
+            states.beforeShow = _transition2.from;
+            if (_transition2.to) {
+              states.show = _transition2.to;
+            }
+          }
+        }
+        if (hide) {
+          var _transition3 = getTransition(hide);
+          if (_transition3) {
+            states.hide = _transition3.to;
+            if (_transition3.from) {
+              states.show = _transition3.from;
+            }
+          }
+        }
+        attrs.states = babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_0___default()({}, attrs.states, states);
+        attrs.actions = babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_0___default()({}, attrs.action, actions);
+      }
+    });
+    if (children.length === 1) {
+      return children[0];
+    }
+    var group = createElement('group', children);
+    group.data = {
+      attrs: {}
+    };
+    if (enterMode) {
+      group.data.attrs.enterMode = enterMode;
+    }
+    if (exitMode) {
+      group.data.attrs.exitMode = exitMode;
+    }
+    return group;
+  }
 });
 
 /***/ })

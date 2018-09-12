@@ -7044,6 +7044,7 @@ let Timeline = class Timeline {
           timers = this[_timers];
 
     this.markTime({ time });[...timers].forEach(([id, timer]) => {
+      if (!timers.has(id)) return; // Need check because it maybe clearTimeout by former handler().
       const { isEntropy, delay, heading } = timer.time,
             { handler, startTime } = timer;
 
@@ -12183,7 +12184,10 @@ const _attr = Symbol('attr'),
       _effects = Symbol('effects'),
       _flow = Symbol('flow'),
       _changeStateAction = Symbol('changeStateAction'),
-      _resolveState = Symbol('resolveState');
+      _resolveState = Symbol('resolveState'),
+      _show = Symbol('show'),
+      _hide = Symbol('hide'),
+      _enter = Symbol('enter');
 
 let BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"])('Instead use sprite.cache = null'), (_class = (_temp = _class2 = class BaseSprite extends _basenode__WEBPACK_IMPORTED_MODULE_4__["default"] {
 
@@ -13047,9 +13051,21 @@ let BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"]
     return true;
   }
 
-  resolveStates(...states) {
+  resolveStates(states, before, after) {
     let currentAnimation = null,
         resolved = false;
+
+    const _states = [];
+    let prev = null;
+    for (let i = 0; i < states.length; i++) {
+      const s = states[i];
+      if (prev !== s) {
+        prev = s;
+        _states.push(s);
+      }
+    }
+    states = _states;
+
     const _resolveStates = () => {
       this.__ignoreAction = false;
       let fromState = this.attr('state');
@@ -13066,6 +13082,7 @@ let BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"]
               // lastState
               delete this[_resolveState];
             }
+            if (after) after.call(this, states);
             resolve(this);
           });
           this.once(`state-from-${fromState}`, ({ animation }) => {
@@ -13102,7 +13119,10 @@ let BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"]
     if (rs) {
       rs.resolve();
       this.__ignoreAction = true;
-      const promise = rs.promise.then(() => _resolveStates());
+      const promise = rs.promise.then(() => {
+        if (before) before.call(this, states);
+        return _resolveStates().promise;
+      });
       return {
         promise,
         resolve() {
@@ -13112,21 +13132,44 @@ let BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"]
         }
       };
     }
+    if (before) before.call(this, states);
     return _resolveStates();
   }
 
   // state: original -> show -> hide -> show -> original
   show() {
+    if (this[_show]) return this[_show];
+
     const originalDisplay = this.attr('_originalDisplay') || '';
     const originalState = this.attr('_originalState') || 'default';
 
     const states = this.attr('states');
 
     if (states.show) {
-      this.once('state-from-hide', () => {
-        this.attr('display', originalDisplay);
+      const state = this.attr('state');
+      if (state === 'hide') {
+        this.once('state-from-hide', () => {
+          this.attr('display', originalDisplay);
+        });
+      }
+      const _st = ['show', originalState];
+      if (states.beforeShow) {
+        _st.unshift('beforeShow');
+      }
+      const deferred = this.resolveStates(_st);
+      deferred.promise = deferred.promise.then(() => {
+        if (!this[_hide]) {
+          delete this[_attr]._originalDisplay;
+          delete this[_attr]._originalState;
+          if (states.show.__default) {
+            delete states.show;
+            this.attr('states', states);
+          }
+        }
+        delete this[_show];
       });
-      return this.resolveStates('show', originalState);
+      this[_show] = deferred;
+      return deferred;
     }
 
     this.attr('state', originalState);
@@ -13135,27 +13178,42 @@ let BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"]
   }
 
   hide() {
-    const _originalDisplay = this.attr('display');
-    const _originalState = this.attr('state');
-    this.attr({
-      _originalDisplay,
-      _originalState
-    });
+    const state = this.attr('state');
+    if (this[_hide] || state === 'hide') return this[_hide];
+    const _originalDisplay = this.attr('_originalDisplay');
+    if (_originalDisplay == null) {
+      const display = this.attr('display');
+
+      this.attr({
+        _originalDisplay: display !== 'none' ? display : '',
+        _originalState: state !== 'hide' ? state : 'default'
+      });
+    }
 
     const states = this.attr('states');
 
     if (states.hide) {
-      if (!states.show || states.show.__default) {
+      if (!states.show) {
         const beforeHide = { __default: true };
+        if (states.beforeShow) {
+          Object.keys(states.beforeShow).forEach(key => {
+            beforeHide[key] = this.attr(key);
+          });
+        }
         Object.keys(states.hide).forEach(key => {
           beforeHide[key] = this.attr(key);
         });
         states.show = beforeHide;
+        this.attr('states', states);
       }
-      return this.resolveStates('show', 'hide').promise.then(() => {
+      const deferred = this.resolveStates(['show', 'hide']);
+      deferred.promise = deferred.promise.then(() => {
         this.attr('display', 'none');
+        delete this[_hide];
         return this;
       });
+      this[_hide] = deferred;
+      return deferred;
     }
 
     this.attr('state', 'hide');
@@ -13167,20 +13225,24 @@ let BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"]
     const states = this.attr('states');
     let ret;
     if (states && (states.beforeEnter || states.afterEnter)) {
-      const state = this.attr('state');
-      if (state !== 'beforeEnter' && state !== 'afterEnter' && (!states.afterEnter || states.afterEnter.__default)) {
-        const afterEnter = { __default: true };
-        Object.keys(states.beforeEnter).forEach(key => {
-          afterEnter[key] = this.attr(key);
-        });
-        states.afterEnter = afterEnter;
-      }
-      const deferred = this.resolveStates('beforeEnter', 'afterEnter', toState || state);
+      const deferred = this.resolveStates(['beforeEnter', 'afterEnter'], _states => {
+        const state = this.attr('state');
+        _states.push(toState || state);
+        if (state !== 'beforeEnter' && state !== 'afterEnter' && (!states.afterEnter || states.afterEnter.__default)) {
+          const afterEnter = { __default: true };
+          Object.keys(states.beforeEnter).forEach(key => {
+            afterEnter[key] = this.attr(key);
+          });
+          states.afterEnter = afterEnter;
+          this.attr('states', states);
+        }
+      });
       ret = deferred;
     } else {
       ret = super.enter();
     }
 
+    this[_enter] = ret;
     if (this.children) {
       const enterMode = this.attr('enterMode');
       if (enterMode === 'onebyone' || enterMode === 'onebyone-reverse') {
@@ -13197,6 +13259,7 @@ let BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"]
           children = [...children].reverse();
         }
 
+        let currentTask = ret;
         children.forEach(c => {
           const states = c.attr('states');
           if (states && (states.beforeEnter || states.afterEnter)) {
@@ -13206,6 +13269,7 @@ let BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"]
                 afterEnter[key] = c.attr(key);
               });
               states.afterEnter = afterEnter;
+              c.attr('states', states);
             }
           }
           const toState = c.attr('state');
@@ -13213,133 +13277,166 @@ let BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"]
           promise = promise.then(() => {
             const d = c.enter(toState);
             if (d.promise) {
-              if (resolved && d.resolve) d.resolve();
+              currentTask = d;
+              if (resolved && d.resolve) {
+                d.resolve();
+              }
               return d.promise;
             }
             return d;
           });
         });
 
-        return {
+        this[_enter] = {
           promise,
           resolve() {
+            if (currentTask && currentTask.resolve) currentTask.resolve();
             resolved = true;
           }
         };
-      }
-
-      const entries = this.children.map(c => c.enter()).filter(d => d.promise);
-      if (ret.promise) {
-        entries.unshift(ret);
-      }
-      if (entries.length) {
-        const deferred = {
-          promise: Promise.all(entries.map(d => d.promise)),
-          resolve: () => {
-            entries.forEach(d => d.resolve());
-            return this.promise;
-          }
-        };
-        return deferred;
+      } else {
+        const entries = this.children.map(c => c.enter()).filter(d => d.promise);
+        if (ret.promise) {
+          entries.unshift(ret);
+        }
+        if (entries.length) {
+          const deferred = {
+            promise: Promise.all(entries.map(d => d.promise)),
+            resolve: () => {
+              entries.forEach(d => d.resolve());
+              return this.promise;
+            }
+          };
+          this[_enter] = deferred;
+        }
       }
     }
 
-    return ret;
+    return this[_enter];
   }
 
   exit(toState, onbyone = false) {
-    const states = this.attr('states');
-    let ret;
-    const afterEnter = states.afterEnter || {};
-    if (states && (states.beforeExit || states.afterExit)) {
-      const state = this.attr('state');
-      if (state !== 'beforeExit' && state !== 'afterExit' && (!states.beforeExit || states.beforeExit.__default)) {
-        states.beforeExit = Object.assign({}, afterEnter);
-        states.beforeExit.__default = true;
-      }
-      const deferred = this.resolveStates('beforeExit', 'afterExit');
-      deferred.promise.then(() => {
-        if (!onbyone) {
-          this.attr(afterEnter);
-          this[_attr].quietSet('state', toState || state);
-        }
-        return this;
-      });
-      ret = deferred;
-    } else {
-      ret = super.exit();
-      this.attr(afterEnter);
-    }
-
-    if (this.children) {
-      const exitMode = this.attr('exitMode');
-      if (exitMode === 'onebyone' || exitMode === 'onebyone-reverse') {
-        let promise = Promise.resolve(this);
-        let resolved = false;
-
-        let children = this.children;
-        if (exitMode === 'onebyone-reverse') {
-          children = [...children].reverse();
-        }
-
-        children.forEach(c => {
-          const states = c.attr('states');
-          if (states && (states.beforeExit || states.afterExit)) {
-            if (!states.beforeExit || states.beforeExit.__default) {
-              states.beforeExit = Object.assign({}, afterEnter);
-              states.beforeExit.__default = true;
-            }
+    const _exit = () => {
+      const states = this.attr('states');
+      let ret;
+      const afterEnter = states.afterEnter || {};
+      if (states && (states.beforeExit || states.afterExit)) {
+        let state;
+        const deferred = this.resolveStates(['beforeExit', 'afterExit'], () => {
+          state = this.attr('state');
+          if (state !== 'beforeExit' && state !== 'afterExit' && (!states.beforeExit || states.beforeExit.__default)) {
+            states.beforeExit = Object.assign({}, afterEnter);
+            states.beforeExit.__default = true;
+            this.attr('states', states);
           }
-          const toState = c.attr('state');
-          c.attr('state', 'beforeExit');
-          promise = promise.then(() => {
-            const d = c.exit(toState, true);
-            if (d.promise) {
-              if (resolved && d.resolve) d.resolve();
-              return d.promise;
-            }
-            return d;
-          });
-          c.__toState = toState;
         });
+        deferred.promise.then(() => {
+          if (!onbyone) {
+            this.attr(afterEnter);
+            this[_attr].quietSet('state', toState || state);
+          }
+          return this;
+        });
+        ret = deferred;
+      } else {
+        ret = super.exit();
+        this.attr(afterEnter);
+      }
 
-        promise = promise.then(() => {
-          const p = ret.promise || Promise.resolve(this);
-          return p.then(() => {
-            this.children.forEach(c => {
-              const states = c.attr('states');
-              c.attr(states.afterEnter);
-              c[_attr].quietSet('state', c.__toState);
-              delete c.__toState;
+      if (this.children) {
+        const exitMode = this.attr('exitMode');
+        if (exitMode === 'onebyone' || exitMode === 'onebyone-reverse') {
+          let promise = Promise.resolve(this);
+          let resolved = false;
+
+          let children = this.children;
+          if (exitMode === 'onebyone-reverse') {
+            children = [...children].reverse();
+          }
+
+          let currentTask = null;
+          children.forEach(c => {
+            const states = c.attr('states');
+            if (states && (states.beforeExit || states.afterExit)) {
+              if (!states.beforeExit || states.beforeExit.__default) {
+                states.beforeExit = Object.assign({}, afterEnter);
+                states.beforeExit.__default = true;
+                c.attr('states', states);
+              }
+            }
+            const toState = c.attr('state');
+            c.attr('state', 'beforeExit');
+            promise = promise.then(() => {
+              const d = c.exit(toState, true);
+              if (d.promise) {
+                currentTask = d;
+                if (resolved && d.resolve) d.resolve();
+                return d.promise;
+              }
+              return d;
+            });
+            c.__toState = toState;
+          });
+
+          promise = promise.then(() => {
+            const p = ret.promise || Promise.resolve(this);
+            currentTask = ret;
+            return p.then(() => {
+              this.children.forEach(c => {
+                const states = c.attr('states');
+                c.attr(states.afterEnter);
+                c[_attr].quietSet('state', c.__toState);
+                delete c.__toState;
+              });
             });
           });
-        });
 
-        return {
-          promise,
-          resolve() {
-            resolved = true;
-          }
-        };
+          return {
+            promise,
+            resolve() {
+              if (currentTask && currentTask.resolve) currentTask.resolve();
+              resolved = true;
+            }
+          };
+        }
+
+        const exites = this.children.map(c => c.exit()).filter(d => d.promise);
+        if (ret.promise) {
+          exites.unshift(ret);
+        }
+        if (exites.length) {
+          const deferred = {
+            promise: Promise.all(exites.map(d => d.promise)),
+            resolve: () => {
+              exites.forEach(d => d.resolve());
+              return this.promise;
+            }
+          };
+          return deferred;
+        }
       }
 
-      const exites = this.children.map(c => c.exit()).filter(d => d.promise);
-      if (ret.promise) {
-        exites.unshift(ret);
-      }
-      if (exites.length) {
-        const deferred = {
-          promise: Promise.all(exites.map(d => d.promise)),
-          resolve: () => {
-            exites.forEach(d => d.resolve());
-            return this.promise;
-          }
-        };
-        return deferred;
-      }
+      return ret;
+    };
+
+    if (this[_enter] && this[_enter].promise) {
+      let resolved = false;
+      this[_enter].resolve();
+      const promise = this[_enter].promise.then(() => {
+        const deferred = _exit();
+        if (resolved && deferred.resolve) {
+          deferred.resolve();
+        }
+        return deferred.promise;
+      });
+      return {
+        promise,
+        resolve() {
+          resolved = true;
+        }
+      };
     }
-
-    return ret;
+    return _exit();
   }
 }, _class2.Attr = _attr__WEBPACK_IMPORTED_MODULE_3__["default"], _temp), (_applyDecoratedDescriptor(_class.prototype, 'xy', [_utils__WEBPACK_IMPORTED_MODULE_2__["absolute"]], Object.getOwnPropertyDescriptor(_class.prototype, 'xy'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'attrSize', [_utils__WEBPACK_IMPORTED_MODULE_2__["absolute"], _utils__WEBPACK_IMPORTED_MODULE_2__["flow"]], Object.getOwnPropertyDescriptor(_class.prototype, 'attrSize'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'boxOffsetSize', [_utils__WEBPACK_IMPORTED_MODULE_2__["absolute"], _utils__WEBPACK_IMPORTED_MODULE_2__["flow"]], Object.getOwnPropertyDescriptor(_class.prototype, 'boxOffsetSize'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'contentSize', [_utils__WEBPACK_IMPORTED_MODULE_2__["flow"]], Object.getOwnPropertyDescriptor(_class.prototype, 'contentSize'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'clientSize', [_utils__WEBPACK_IMPORTED_MODULE_2__["flow"]], Object.getOwnPropertyDescriptor(_class.prototype, 'clientSize'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'offsetSize', [_utils__WEBPACK_IMPORTED_MODULE_2__["flow"]], Object.getOwnPropertyDescriptor(_class.prototype, 'offsetSize'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'originalRect', [_utils__WEBPACK_IMPORTED_MODULE_2__["flow"]], Object.getOwnPropertyDescriptor(_class.prototype, 'originalRect'), _class.prototype), _applyDecoratedDescriptor(_class.prototype, 'clearCache', [_dec], Object.getOwnPropertyDescriptor(_class.prototype, 'clearCache'), _class.prototype)), _class));
 
@@ -13557,6 +13654,11 @@ let SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"]
         ':hide': {
           duration: 300,
           easing: 'ease-out'
+        },
+        'hide:beforeShow': 'none',
+        'beforeShow:': {
+          duration: 300,
+          easing: 'ease-in'
         }
       },
       enterMode: 'normal',
@@ -14117,6 +14219,14 @@ let SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"]
   }
 
   set states(val) {
+    val = Object.assign({}, val);
+    const states = this.get('states');
+    // recover __default
+    Object.entries(states).forEach(([key, value]) => {
+      if (value.__default && !(key in val)) {
+        val[key] = value;
+      }
+    });
     this.quietSet('states', val);
   }
 
@@ -14172,7 +14282,7 @@ let SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"]
               actions = this.actions;
         if (actions) {
           action = !subject.__ignoreAction && (actions[`${oldState}:${val}`] || actions[`:${val}`] || actions[`${oldState}:`]);
-          if (action) {
+          if (action && action !== 'none') {
             const animation = subject.changeState(fromState, toState, action);
             const tag = Symbol('tag');
             animation.tag = tag;
@@ -14193,7 +14303,7 @@ let SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"]
           }
         }
       }
-      if (!action || subject.__ignoreAction) {
+      if (!action || action === 'none' || subject.__ignoreAction) {
         subject.dispatchEvent(`state-from-${oldState}`, { from: oldState, to: val }, true, true);
         if (toState) subject.attr(toState);
         subject.dispatchEvent(`state-to-${val}`, { from: oldState, to: val }, true, true);
@@ -21363,7 +21473,7 @@ let _default = class _default extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["
           createElementNS(uri, name) {
             return that.layer(name);
           },
-          documentElement: document
+          documentElement: typeof document !== 'undefined' ? document : null
         };
       }
     });
@@ -21888,7 +21998,7 @@ let _default = class _default extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["
 /* 249 */
 /***/ (function(module) {
 
-module.exports = {"_from":"spritejs@^2.15.0","_id":"spritejs@2.15.0","_inBundle":false,"_integrity":"sha512-I7TnzIJKFNA70kC/FQMIMLwnPryIG0LtHdCj+2s7apBUFPIdXkzTBsFA52WwvBg4swv9ZpwOJPdoa10ukwuC5A==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.15.0","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.15.0","saveSpec":null,"fetchSpec":"^2.15.0"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.15.0.tgz","_shasum":"f5fab38183fe120c65215692039aa9209fb6cdde","_spec":"spritejs@^2.15.0","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.17.5"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^11.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.15.0"};
+module.exports = {"_from":"spritejs@^2.15.6","_id":"spritejs@2.15.6","_inBundle":false,"_integrity":"sha512-X23cDbKi6hhMcf4LzzD4Je8lByx02xwkExgWoDEVQXyXGEpljs6VXTRC2+5R037boMg70C/XGkqjIloyuhTeYQ==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.15.6","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.15.6","saveSpec":null,"fetchSpec":"^2.15.6"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.15.6.tgz","_shasum":"f8eeff755e6ff97ffcee2064fb7a81574d4f584b","_spec":"spritejs@^2.15.6","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.17.11"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^11.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.15.6"};
 
 /***/ }),
 /* 250 */
@@ -22059,8 +22169,8 @@ function parentNode(node) {
 function nextSibling(node) {
   if (node instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["BaseNode"]) {
     if (node.parent) {
-      const idx = node.parent.indexOf(node);
-      return node.parent[idx + 1];
+      const idx = node.parent.children.indexOf(node);
+      return node.parent.children[idx + 1];
     }
     return null;
   }
@@ -25461,6 +25571,8 @@ function trigger(el, type) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _modules_transition__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(268);
+/* harmony import */ var spritejs__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(70);
+
 
 
 function getStyle(el) {
@@ -25479,15 +25591,31 @@ function locateNode(vnode) {
     vnode = locateNode(vnode);
     const transition = vnode.data && vnode.data.transition;
     const style = getStyle(el);
-
-    const originalDisplay = el.__vOriginalDisplay = style.display === 'none' ? '' : style.display;
-    if (value && transition) {
-      vnode.data.show = true;
-      Object(_modules_transition__WEBPACK_IMPORTED_MODULE_0__["enter"])(vnode, () => {
-        style.display = originalDisplay;
-      });
+    if (el instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["BaseNode"]) {
+      const states = style.states;
+      if (!value && states.hide) {
+        const beforeHide = { __default: true };
+        Object.keys(states.hide).forEach(key => {
+          beforeHide[key] = style[key];
+        });
+        states.show = beforeHide;
+        el.attr(states.hide);
+      }
+      if (!value) {
+        style.display = 'none';
+        style.quietSet('state', 'hide');
+      }
+      // if (value) el.show()
     } else {
-      style.display = value ? originalDisplay : 'none';
+      const originalDisplay = el.__vOriginalDisplay = style.display === 'none' ? '' : style.display;
+      if (value && transition) {
+        vnode.data.show = true;
+        Object(_modules_transition__WEBPACK_IMPORTED_MODULE_0__["enter"])(vnode, () => {
+          style.display = originalDisplay;
+        });
+      } else {
+        style.display = value ? originalDisplay : 'none';
+      }
     }
   },
 
@@ -25497,19 +25625,23 @@ function locateNode(vnode) {
     vnode = locateNode(vnode);
     const transition = vnode.data && vnode.data.transition;
     const style = getStyle(el);
-    if (transition) {
-      vnode.data.show = true;
-      if (value) {
-        Object(_modules_transition__WEBPACK_IMPORTED_MODULE_0__["enter"])(vnode, () => {
-          style.display = el.__vOriginalDisplay;
-        });
-      } else {
-        Object(_modules_transition__WEBPACK_IMPORTED_MODULE_0__["leave"])(vnode, () => {
-          style.display = 'none';
-        });
-      }
+    if (el instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["BaseNode"]) {
+      if (value) el.show();else el.hide();
     } else {
-      style.display = value ? el.__vOriginalDisplay : 'none';
+      if (transition) {
+        vnode.data.show = true;
+        if (value) {
+          Object(_modules_transition__WEBPACK_IMPORTED_MODULE_0__["enter"])(vnode, () => {
+            style.display = el.__vOriginalDisplay;
+          });
+        } else {
+          Object(_modules_transition__WEBPACK_IMPORTED_MODULE_0__["leave"])(vnode, () => {
+            style.display = 'none';
+          });
+        }
+      } else {
+        style.display = value ? el.__vOriginalDisplay : 'none';
+      }
     }
   },
 
@@ -28578,13 +28710,211 @@ const shouldDecodeNewlinesForHref = core_util_index__WEBPACK_IMPORTED_MODULE_0__
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
+const Transitions = {
+  'fade-in': (duration = 300, easing = 'ease-in') => {
+    return {
+      from: {
+        opacity: 0
+      },
+      action: {
+        duration,
+        easing
+      }
+    };
+  },
+  'fade-out': (duration = 300, easing = 'ease-out') => {
+    return {
+      to: {
+        opacity: 0
+      },
+      action: {
+        duration,
+        easing
+      }
+    };
+  },
+  'slide-in-top': (duration = 300, easing = 'ease-in', distance = 300) => {
+    return {
+      from: {
+        translate: [0, -distance],
+        opacity: 0
+      },
+      action: {
+        duration,
+        easing
+      }
+    };
+  },
+  'slide-in-right': (duration = 300, easing = 'ease-in', distance = 300) => {
+    return {
+      from: {
+        translate: [distance, 0],
+        opacity: 0
+      },
+      action: {
+        duration,
+        easing
+      }
+    };
+  },
+  'slide-in-bottom': (duration = 300, easing = 'ease-in', distance = 300) => {
+    return {
+      from: {
+        translate: [0, distance],
+        opacity: 0
+      },
+      action: {
+        duration,
+        easing
+      }
+    };
+  },
+  'slide-in-left': (duration = 300, easing = 'ease-in', distance = 300) => {
+    return {
+      from: {
+        translate: [-distance, 0],
+        opacity: 0
+      },
+      action: {
+        duration,
+        easing
+      }
+    };
+  },
+  'slide-out-top': (duration = 300, easing = 'ease-in', distance = 300) => {
+    return {
+      to: {
+        translate: [0, -distance],
+        opacity: 0
+      },
+      action: {
+        duration,
+        easing
+      }
+    };
+  },
+  'slide-out-right': (duration = 300, easing = 'ease-in', distance = 300) => {
+    return {
+      to: {
+        translate: [distance, 0],
+        opacity: 0
+      },
+      action: {
+        duration,
+        easing
+      }
+    };
+  },
+  'slide-out-bottom': (duration = 300, easing = 'ease-in', distance = 300) => {
+    return {
+      to: {
+        translate: [0, distance],
+        opacity: 0
+      },
+      action: {
+        duration,
+        easing
+      }
+    };
+  },
+  'slide-out-left': (duration = 300, easing = 'ease-in', distance = 300) => {
+    return {
+      to: {
+        translate: [-distance, 0],
+        opacity: 0
+      },
+      action: {
+        duration,
+        easing
+      }
+    };
+  }
+};
+
+function getTransition(option) {
+  let transition = option;
+  if (typeof option === 'string') {
+    transition = Transitions[option]();
+  } else if (Array.isArray(option)) {
+    // [name, time, easing]
+    const [name, ...args] = option;
+    transition = Transitions[name](args);
+  }
+  return transition;
+}
+
 /* harmony default export */ __webpack_exports__["default"] = ({
-  data() {},
-  template: `
-    <group>
-      <slot></slot>
-    </group>
-  `
+  props: ['enter', 'exit', 'show', 'hide', 'enterMode', 'exitMode'],
+  render(createElement) {
+    const children = this.$slots.default;
+    const { enter, exit, show, hide, enterMode, exitMode } = this;
+    children.forEach(child => {
+      if (child.data && child.data.attrs) {
+        const attrs = child.data.attrs;
+        const states = {};
+        const actions = {};
+        if (enter) {
+          const transition = getTransition(enter);
+          if (transition) {
+            states.beforeEnter = transition.from;
+            if (transition.to) {
+              states.afterEnter = transition.to;
+            }
+            actions['beforeEnter:'] = transition.action;
+          }
+          // if (!child.key) {
+          //   child.key = `_key${Math.random()}`
+          // }
+        }
+        if (exit) {
+          const transition = getTransition(exit);
+          if (transition) {
+            states.afterExit = transition.to;
+            if (transition.from) {
+              states.beforeExit = transition.from;
+            }
+          }
+          // if (!child.key) {
+          //   child.key = `_key${Math.random()}`
+          // }
+        }
+        if (show) {
+          const transition = getTransition(show);
+          if (transition) {
+            states.beforeShow = transition.from;
+            if (transition.to) {
+              states.show = transition.to;
+            }
+          }
+        }
+        if (hide) {
+          const transition = getTransition(hide);
+          if (transition) {
+            states.hide = transition.to;
+            if (transition.from) {
+              states.show = transition.from;
+            }
+          }
+        }
+        attrs.states = Object.assign({}, attrs.states, states);
+        attrs.actions = Object.assign({}, attrs.action, actions);
+      }
+    });
+    if (children.length === 1) {
+      return children[0];
+    }
+    const group = createElement('group', children);
+    group.data = {
+      attrs: {}
+    };
+    if (enterMode) {
+      group.data.attrs.enterMode = enterMode;
+    }
+    if (exitMode) {
+      group.data.attrs.exitMode = exitMode;
+    }
+    return group;
+  }
 });
 
 /***/ })

@@ -1,6 +1,7 @@
 /* @flow */
 
 import { enter, leave } from '../modules/transition'
+import { BaseNode } from 'spritejs'
 
 function getStyle (el) {
   if (el.style) return el.style
@@ -20,16 +21,32 @@ export default {
     vnode = locateNode(vnode)
     const transition = vnode.data && vnode.data.transition
     const style = getStyle(el)
-
-    const originalDisplay = el.__vOriginalDisplay =
-      style.display === 'none' ? '' : style.display
-    if (value && transition) {
-      vnode.data.show = true
-      enter(vnode, () => {
-        style.display = originalDisplay
-      })
+    if (el instanceof BaseNode) {
+      const states = style.states
+      if (!value && states.hide) {
+        const beforeHide = { __default: true }
+        Object.keys(states.hide).forEach((key) => {
+          beforeHide[key] = style[key]
+        })
+        states.show = beforeHide
+        el.attr(states.hide)
+      }
+      if (!value) {
+        style.display = 'none'
+        style.quietSet('state', 'hide')
+      }
+      // if (value) el.show()
     } else {
-      style.display = value ? originalDisplay : 'none'
+      const originalDisplay = el.__vOriginalDisplay =
+        style.display === 'none' ? '' : style.display
+      if (value && transition) {
+        vnode.data.show = true
+        enter(vnode, () => {
+          style.display = originalDisplay
+        })
+      } else {
+        style.display = value ? originalDisplay : 'none'
+      }
     }
   },
 
@@ -39,19 +56,24 @@ export default {
     vnode = locateNode(vnode)
     const transition = vnode.data && vnode.data.transition
     const style = getStyle(el)
-    if (transition) {
-      vnode.data.show = true
-      if (value) {
-        enter(vnode, () => {
-          style.display = el.__vOriginalDisplay
-        })
-      } else {
-        leave(vnode, () => {
-          style.display = 'none'
-        })
-      }
+    if (el instanceof BaseNode) {
+      if (value) el.show()
+      else el.hide()
     } else {
-      style.display = value ? el.__vOriginalDisplay : 'none'
+      if (transition) {
+        vnode.data.show = true
+        if (value) {
+          enter(vnode, () => {
+            style.display = el.__vOriginalDisplay
+          })
+        } else {
+          leave(vnode, () => {
+            style.display = 'none'
+          })
+        }
+      } else {
+        style.display = value ? el.__vOriginalDisplay : 'none'
+      }
     }
   },
 

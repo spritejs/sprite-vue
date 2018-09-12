@@ -15,7 +15,7 @@
   "dependencies": {
     "babel-decorators-runtime": "^0.2.0",
     "babel-plugin-transform-class-properties": "^6.24.1",
-    "spritejs": "^2.15.0",
+    "spritejs": "^2.15.6",
     "vue": "^2.5.17"
   },
   "devDependencies": {
