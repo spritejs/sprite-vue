@@ -160,6 +160,7 @@ export default {
             if (transition.from) {
               states.beforeExit = transition.from
             }
+            actions[':afterExit'] = transition.action
           }
           // if (!child.key) {
           //   child.key = `_key${Math.random()}`
@@ -172,6 +173,7 @@ export default {
             if (transition.to) {
               states.show = transition.to
             }
+            actions['beforeShow:'] = transition.action
           }
         }
         if (hide) {
@@ -181,6 +183,7 @@ export default {
             if (transition.from) {
               states.show = transition.from
             }
+            actions[':hide'] = transition.action
           }
         }
         attrs.states = Object.assign({}, attrs.states, states)

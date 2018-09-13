@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Example</title>
+  <script src="/js/sprite-vue.js"></script>
+  <!-- <script src="/js/sprite-vue-debug.js"></script> -->
+  <style>
+  #container {
+    width: 600px;
+    height: 600px;
+    position: relative;
+  }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+const { Vue } = spritevue
+
+Vue.component('my-scene', {
+  data () {
+    return {
+      viewport: [600, 600],
+      selected: 0,
+      color: 'red',
+      preload: false
+    }
+  },
+  mounted () {
+    console.log(this.$refs)
+  },
+  methods: {
+    toggle () {
+      this.selected = (this.selected + 1) % 3
+      // this.color = 'orange'
+    },
+    load () {
+      console.log('loaded')
+      this.preload = true
+    },
+    loading () {
+      console.log('loading')
+    }
+  },
+  template: `
+    <scene id="container" :viewport=viewport :resources="[[
+      'https://p5.ssl.qhimg.com/t01f47a319aebf27174.png',
+      'https://s3.ssl.qhres.com/static/a6a7509c33a290a6.json',
+    ]]" @load="load" @preload="loading">
+      <layer v-if="preload" id="fglayer" @click="toggle">
+        <s-transition enter="fade-in" :show="['fade-in', 800]" hide="fade-out">
+          <sprite v-show="selected===0" :attrs="{x: 100, y: 100, textures: 'guanguan1.png', scale: 0.5, id: 'a'}"
+            ></sprite>
+          <sprite v-show="selected===1" :attrs="{x: 300, y: 100, textures: 'guanguan2.png', scale: 0.5, id: 'b'}"
+           ></sprite>
+          <sprite v-show="selected===2" :attrs="{x: 500, y: 100, textures: 'guanguan3.png', scale: 0.5, id: 'c'}"
+           ></sprite>
+        </s-transition>
+      </layer>
+      <div v-else>Loading...</div>
+    </scene>
+  `
+})
+
+new Vue({
+  el: '#app',
+  data () {
+    return {
+      state: true
+    }
+  },
+  methods: {
+    toggle () {
+      this.state = !this.state
+    }
+  },
+  template: `
+  <div>
+    <h1 @click="toggle"> abc </h1>
+    <div v-if="state">
+      <my-scene></my-scene>
+    </div>
+  </div>
+`
+})
+  </script>
+</body>
+</html>

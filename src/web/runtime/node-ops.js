@@ -19,6 +19,12 @@ export function createElement (tagName: string, vnode: VNode): Element {
       elm.id = attrs.id
       const scene = createNode(tagName, elm, attrs)
       elm.scene = scene
+      if (attrs.resources) {
+        const resources = attrs.resources
+        scene.preload(...resources).then(() => {
+          scene.dispatchEvent('load', { resources })
+        })
+      }
       return scene
     }
     return createNode(tagName, attrs)
@@ -44,6 +50,7 @@ export function createTextNode (text: string): Text {
 
 export function createComment (text: string): Comment {
   const comment = document.createComment(text)
+  comment.dataset = {}
   comment.connect = (parent, zOrder) => {
     comment.parent = parent
     comment.zOrder = zOrder
@@ -71,7 +78,7 @@ export function insertBefore (parentNode: Node, newNode: Node, referenceNode: No
       parentNode.text = newNode.textContent
       // parentNode.childNodes = [newNode]
     }
-    if (newNode instanceof BaseNode || newNode.nodeType === document.COMMENT_NODE) {
+    if (newNode instanceof BaseNode || newNode.nodeType === document.COMMENT_NODE || parentNode instanceof Scene) {
       parentNode.insertBefore(newNode, referenceNode)
     }
   } else {
@@ -101,7 +108,7 @@ export function appendChild (node: Node, child: Node) {
       node.text = child.textContent
       // node.childNodes = [child]
     }
-    if (child instanceof BaseNode || child.nodeType === document.COMMENT_NODE) {
+    if (child instanceof BaseNode || child.nodeType === document.COMMENT_NODE || node instanceof Scene) {
       node.appendChild(child)
     } else if (child.nodeType !== document.TEXT_NODE) {
       const nodeType = child.tagName.toLowerCase()
@@ -120,7 +127,7 @@ export function appendChild (node: Node, child: Node) {
 }
 
 export function parentNode (node: Node): ?Node {
-  return node.parentNode || node.parent
+  return node.parent || node.parentNode
 }
 
 export function nextSibling (node: Node): ?Node {
