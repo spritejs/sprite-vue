@@ -12004,6 +12004,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "findColor", function() { return findColor; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "cacheContextPool", function() { return cacheContextPool; });
 function drawRadiusBox(context, { x, y, w, h, r }) {
+  // avoid radius larger than width or height
+  r = Math.min(r, Math.floor(Math.min(w, h) / 2));
+  // avoid radius is negative
+  r = Math.max(r, 0);
+
   context.beginPath();
   context.moveTo(x + r, y);
   context.arcTo(x + w, y, x + w, y + h, r);
@@ -13146,17 +13151,18 @@ let BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"]
     const states = this.attr('states');
 
     if (states.show) {
-      const state = this.attr('state');
-      if (state === 'hide') {
-        this.once('state-from-hide', () => {
-          this.attr('display', originalDisplay);
-        });
-      }
       const _st = ['show', originalState];
       if (states.beforeShow) {
         _st.unshift('beforeShow');
       }
-      const deferred = this.resolveStates(_st);
+      const deferred = this.resolveStates(_st, () => {
+        const state = this.attr('state');
+        if (state === 'hide') {
+          this.once('state-from-hide', () => {
+            this.attr('display', originalDisplay);
+          });
+        }
+      });
       deferred.promise = deferred.promise.then(() => {
         if (!this[_hide]) {
           delete this[_attr]._originalDisplay;
@@ -13172,6 +13178,16 @@ let BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"]
       return deferred;
     }
 
+    const rs = this[_resolveState];
+    if (rs) {
+      rs.resolve();
+      rs.promise.then(() => {
+        this.attr('state', originalState);
+        this.attr('display', originalDisplay);
+      });
+      return rs;
+    }
+
     this.attr('state', originalState);
     this.attr('display', originalDisplay);
     return this;
@@ -13179,7 +13195,7 @@ let BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"]
 
   hide() {
     const state = this.attr('state');
-    if (this[_hide] || state === 'hide') return this[_hide];
+    if (this[_hide] || state === 'hide' || state === 'afterExit' || state === 'beforeExit') return this[_hide];
     const _originalDisplay = this.attr('_originalDisplay');
     if (_originalDisplay == null) {
       const display = this.attr('display');
@@ -13193,20 +13209,21 @@ let BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"]
     const states = this.attr('states');
 
     if (states.hide) {
-      if (!states.show) {
-        const beforeHide = { __default: true };
-        if (states.beforeShow) {
-          Object.keys(states.beforeShow).forEach(key => {
+      const deferred = this.resolveStates(['show', 'hide'], () => {
+        if (!states.show) {
+          const beforeHide = { __default: true };
+          if (states.beforeShow) {
+            Object.keys(states.beforeShow).forEach(key => {
+              beforeHide[key] = this.attr(key);
+            });
+          }
+          Object.keys(states.hide).forEach(key => {
             beforeHide[key] = this.attr(key);
           });
+          states.show = beforeHide;
+          this.attr('states', states);
         }
-        Object.keys(states.hide).forEach(key => {
-          beforeHide[key] = this.attr(key);
-        });
-        states.show = beforeHide;
-        this.attr('states', states);
-      }
-      const deferred = this.resolveStates(['show', 'hide']);
+      });
       deferred.promise = deferred.promise.then(() => {
         this.attr('display', 'none');
         delete this[_hide];
@@ -13214,6 +13231,16 @@ let BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"]
       });
       this[_hide] = deferred;
       return deferred;
+    }
+
+    const rs = this[_resolveState];
+    if (rs) {
+      rs.resolve();
+      rs.promise.then(() => {
+        this.attr('state', 'hide');
+        this.attr('display', 'none');
+      });
+      return rs;
     }
 
     this.attr('state', 'hide');
@@ -13339,8 +13366,18 @@ let BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"]
         });
         ret = deferred;
       } else {
-        ret = super.exit();
-        this.attr(afterEnter);
+        const rs = this[_resolveState];
+        if (rs) {
+          rs.resolve();
+          rs.promise.then(() => {
+            this.attr(afterEnter);
+            return super.exit();
+          });
+          ret = rs;
+        } else {
+          ret = super.exit();
+          this.attr(afterEnter);
+        }
       }
 
       if (this.children) {
@@ -14275,35 +14312,35 @@ let SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"]
       const states = this.states;
 
       let action = null;
-      const toState = states[val];
+      const toState = states[val] || {};
       const subject = this.subject;
-      if (subject.parent && toState) {
+      if (subject.layer) {
         const fromState = states[oldState],
               actions = this.actions;
-        if (actions) {
-          action = !subject.__ignoreAction && (actions[`${oldState}:${val}`] || actions[`:${val}`] || actions[`${oldState}:`]);
-          if (action && action !== 'none') {
-            const animation = subject.changeState(fromState, toState, action);
-            const tag = Symbol('tag');
-            animation.tag = tag;
-            if (animation.__reversed) {
-              subject.dispatchEvent(`state-to-${oldState}`, {
-                from: val,
-                to: oldState,
-                action: animation.__reversed,
-                cancelled: true,
-                animation }, true, true);
-            }
-            subject.dispatchEvent(`state-from-${oldState}`, { from: oldState, to: val, action, animation }, true, true);
-            animation.finished.then(() => {
-              if (animation.tag === tag) {
-                subject.dispatchEvent(`state-to-${val}`, { from: oldState, to: val, action, animation }, true, true);
-              }
-            });
-          }
+        action = !subject.__ignoreAction && (actions[`${oldState}:${val}`] || actions[`:${val}`] || actions[`${oldState}:`]);
+        if (!action || action === 'none') action = { duration: 0 };
+
+        const animation = subject.changeState(fromState, toState, action);
+        const tag = Symbol('tag');
+        animation.tag = tag;
+        if (animation.__reversed) {
+          subject.dispatchEvent(`state-to-${oldState}`, {
+            from: val,
+            to: oldState,
+            action: animation.__reversed,
+            cancelled: true,
+            animation }, true, true);
         }
-      }
-      if (!action || action === 'none' || subject.__ignoreAction) {
+        subject.dispatchEvent(`state-from-${oldState}`, { from: oldState, to: val, action, animation }, true, true);
+        animation.finished.then(() => {
+          if (animation.tag === tag) {
+            subject.dispatchEvent(`state-to-${val}`, { from: oldState, to: val, action, animation }, true, true);
+          }
+        });
+        if (oldState === 'afterExit') {
+          animation.finish();
+        }
+      } else {
         subject.dispatchEvent(`state-from-${oldState}`, { from: oldState, to: val }, true, true);
         if (toState) subject.attr(toState);
         subject.dispatchEvent(`state-to-${val}`, { from: oldState, to: val }, true, true);
@@ -14577,14 +14614,13 @@ let BaseNode = class BaseNode {
 
     const zOrder = this.zOrder;
     delete this.zOrder;
+    delete this.parent;
+    delete this.isDirty;
 
     this.dispatchEvent('remove', {
       parent,
       zOrder
     }, true, true);
-
-    delete this.parent;
-    delete this.isDirty;
 
     return this;
   }
@@ -17033,15 +17069,6 @@ let Layer = class Layer extends _basenode__WEBPACK_IMPORTED_MODULE_2__["default"
 
     this.outputContext = context;
 
-    // auto release
-    /* istanbul ignore if  */
-    if (context.canvas && context.canvas.addEventListener) {
-      context.canvas.addEventListener('DOMNodeRemovedFromDocument', () => {
-        this.timeline.clear();
-        this.clear();
-      });
-    }
-
     this[_children] = [];
     this[_updateSet] = new Set();
     this[_zOrder] = 0;
@@ -17052,6 +17079,24 @@ let Layer = class Layer extends _basenode__WEBPACK_IMPORTED_MODULE_2__["default"
     this[_node] = new _datanode__WEBPACK_IMPORTED_MODULE_3__["default"]();
 
     this.touchedTargets = {};
+
+    // auto release
+    /* istanbul ignore if  */
+    if (context.canvas && context.canvas.addEventListener) {
+      context.canvas.addEventListener('DOMNodeRemovedFromDocument', () => {
+        this._savePlaybackRate = this.timeline.playbackRate;
+        this._saveChildren = [...this.children];
+        this.remove(...this.children);
+        this.timeline.playbackRate = 0;
+      });
+      context.canvas.addEventListener('DOMNodeInsertedIntoDocument', () => {
+        if (this._saveChildren) {
+          this.timeline.playbackRate = this._savePlaybackRate;
+          this.append(...this._saveChildren);
+          delete this._saveChildren;
+        }
+      });
+    }
   }
 
   attr(...args) {
@@ -17322,22 +17367,6 @@ let Layer = class Layer extends _basenode__WEBPACK_IMPORTED_MODULE_2__["default"
       collisionState = true;
     }
     return super.dispatchEvent(type, evt, collisionState, swallow);
-  }
-
-  connect(parent, zOrder, zIndex) /* istanbul ignore next  */{
-    const ret = super.connect(parent, zOrder);
-    this.zIndex = zIndex;
-    if (parent && parent.container) {
-      parent.container.appendChild(this.outputContext.canvas);
-    }
-    return ret;
-  }
-
-  disconnect(parent) /* istanbul ignore next  */{
-    if (this.canvas && this.canvas.remove) {
-      this.canvas.remove();
-    }
-    return super.disconnect(parent);
   }
 
   group(...sprites) {
@@ -21556,19 +21585,16 @@ let _default = class _default extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["
   }
 
   insertBefore(newchild, refchild) {
+    if (refchild == null) {
+      return this.appendLayer(newchild);
+    }
     if (!this.hasLayer(refchild)) {
       throw new Error('Failed to execute \'insertBefore\' on \'Node\': The node before which the new node is to be inserted is not a child of this node.');
     }
-    this.appendLayer(newchild);
-    this.container.insertBefore(newchild.canvas, refchild.canvas);
-    let els;
-    /* istanbul ignore if */
-    if (this.container.querySelectorAll) {
-      els = this.container.querySelectorAll('canvas');
-    } else {
-      els = this.container.children;
-    }
-    els.forEach((el, i) => {
+    this.appendLayer(newchild, false);
+    this.container.insertBefore(newchild.canvas || newchild, refchild.canvas || refchild);
+    const els = this.container.children;
+    [...els].forEach((el, i) => {
       const id = el.dataset.layerId;
       if (id) {
         const layer = this.layer(id);
@@ -21613,12 +21639,13 @@ let _default = class _default extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["
 
   updateViewport(layer) {
     const [width, height] = this.layerViewport,
-          layers = layer ? [layer] : this[_layers],
           stickMode = this.stickMode,
           stickExtend = this.stickExtend;
+    let layers = layer ? [layer] : this[_layers];
 
-    layers.forEach(layer => {
+    layers = layers.filter(layer => {
       const canvas = layer.canvas;
+      if (!canvas) return false; // ignore not canvas layer
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
       Object.assign(canvas.style, {
@@ -21642,6 +21669,7 @@ let _default = class _default extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["
       if (stickExtend) {
         layer.resolution = this.layerResolution;
       }
+      return true;
     });
 
     this.dispatchEvent('viewportChange', { target: this, layers });
@@ -21743,7 +21771,9 @@ let _default = class _default extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["
     const layers = layer ? [layer] : this[_layers];
 
     layers.forEach(layer => {
-      layer.resolution = this.layerResolution;
+      if (layer.canvas) {
+        layer.resolution = this.layerResolution;
+      }
     });
     this.dispatchEvent('resolutionChange', { target: this, layers });
     return this;
@@ -21818,16 +21848,15 @@ let _default = class _default extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["
 
       for (let i = 0; i < layers.length; i++) {
         const layer = layers[i];
-        if (originalX != null && originalY != null) {
-          [x, y] = layer.toLocalPos(originalX, originalY);
-        } else if (x != null && y != null) {
-          [originalX, originalY] = layer.toGlobalPos(x, y);
-        }
-        Object.assign(evtArgs, {
-          layerX: x, layerY: y, originalX, originalY, x, y
-        });
-
         if (layer.handleEvent) {
+          if (originalX != null && originalY != null) {
+            [x, y] = layer.toLocalPos(originalX, originalY);
+          } else if (x != null && y != null) {
+            [originalX, originalY] = layer.toGlobalPos(x, y);
+          }
+          Object.assign(evtArgs, {
+            layerX: x, layerY: y, originalX, originalY, x, y
+          });
           layer.dispatchEvent(type, evtArgs);
         }
       }
@@ -21876,16 +21905,7 @@ let _default = class _default extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["
   }
 
   layer(id = 'default', opts = { handleEvent: true }) {
-    if (typeof opts === 'number') {
-      opts = { zIndex: opts };
-    }
     if (!this.hasLayer(id)) {
-      let zIndex = 0;
-      if (opts.zIndex != null) {
-        zIndex = opts.zIndex;
-        delete opts.zIndex;
-      }
-
       /* istanbul ignore if  */
       if (typeof window !== 'undefined' && window.getComputedStyle) {
         const pos = window.getComputedStyle && window.getComputedStyle(this.container).position;
@@ -21894,8 +21914,7 @@ let _default = class _default extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["
           this.container.style.position = 'relative';
         }
       }
-
-      this.appendLayer(new _layer__WEBPACK_IMPORTED_MODULE_1__["default"](id, opts), zIndex);
+      this.appendLayer(new _layer__WEBPACK_IMPORTED_MODULE_1__["default"](id, opts));
     }
 
     return this[_layerMap][id];
@@ -21905,7 +21924,26 @@ let _default = class _default extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["
     return this[_layers];
   }
 
-  appendLayer(layer, zIndex = 0) {
+  appendLayer(layer, appendDOMElement = true) {
+    if (!(layer instanceof _layer__WEBPACK_IMPORTED_MODULE_1__["default"])) {
+      // append dom element
+      layer.id = layer.id || `_layer${Math.random()}`;
+      if (!layer.dataset) {
+        layer.dataset = {};
+      }
+      layer.dataset.layerId = layer.id;
+      layer.connect = (parent, zOrder) => {
+        layer.parent = parent;
+        Object.defineProperty(layer, 'zOrder', {
+          value: zOrder,
+          writable: false,
+          configurable: true
+        });
+      };
+      layer.disconnect = parent => {
+        delete layer.zOrder;
+      };
+    }
     const id = layer.id;
 
     if (this.hasLayer(id) && this[_layerMap][id] !== layer) {
@@ -21915,7 +21953,7 @@ let _default = class _default extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["
     this.removeLayer(layer);
 
     this[_layerMap][id] = layer;
-    layer.connect(this, this[_zOrder]++, zIndex);
+    layer.connect(this, this[_zOrder]++);
     this.updateViewport(layer);
     if (!this.stickExtend) {
       layer.resolution = this.layerResolution;
@@ -21926,6 +21964,7 @@ let _default = class _default extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["
     if (_platform__WEBPACK_IMPORTED_MODULE_3__["setDebugToolsObserver"] && layer.id !== '__debuglayer__') {
       Object(_platform__WEBPACK_IMPORTED_MODULE_3__["setDebugToolsObserver"])(this, layer);
     }
+    if (appendDOMElement) this.container.appendChild(layer.canvas || layer);
     return layer;
   }
 
@@ -21935,6 +21974,7 @@ let _default = class _default extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["
     }
     if (this.hasLayer(layer)) {
       layer.disconnect(this);
+      this.container.removeChild(layer.canvas || layer);
       delete this[_layerMap][layer.id];
       this[_layers] = sortOrderedSprites(Object.values(this[_layerMap]), true);
       /* istanbul ignore if  */
@@ -21985,7 +22025,9 @@ let _default = class _default extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["
     }
 
     layers.forEach(layer => {
-      ctx.drawImage(layer.canvas, ...rect);
+      if (layer.canvas) {
+        ctx.drawImage(layer.canvas, ...rect);
+      }
     });
 
     return canvas;
@@ -21998,7 +22040,7 @@ let _default = class _default extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["
 /* 249 */
 /***/ (function(module) {
 
-module.exports = {"_from":"spritejs@^2.15.6","_id":"spritejs@2.15.6","_inBundle":false,"_integrity":"sha512-X23cDbKi6hhMcf4LzzD4Je8lByx02xwkExgWoDEVQXyXGEpljs6VXTRC2+5R037boMg70C/XGkqjIloyuhTeYQ==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.15.6","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.15.6","saveSpec":null,"fetchSpec":"^2.15.6"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.15.6.tgz","_shasum":"f8eeff755e6ff97ffcee2064fb7a81574d4f584b","_spec":"spritejs@^2.15.6","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.17.11"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^11.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.15.6"};
+module.exports = {"_from":"spritejs@^2.15.12","_id":"spritejs@2.15.12","_inBundle":false,"_integrity":"sha512-0ph5ha5TM6fDkSFvqlokxYN1yET7yn2QnG5TNes0H3UCpjBhlixhbg7Gs3V/QRqzp2xPnyA++sEISUOB+KOpMQ==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.15.12","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.15.12","saveSpec":null,"fetchSpec":"^2.15.12"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.15.12.tgz","_shasum":"6a3b929f1990ed14aed08ff52aa1ec840e70692b","_spec":"spritejs@^2.15.12","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.17.15"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^13.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.15.12"};
 
 /***/ }),
 /* 250 */
@@ -22062,6 +22104,12 @@ function createElement(tagName, vnode) {
       elm.id = attrs.id;
       const scene = Object(spritejs__WEBPACK_IMPORTED_MODULE_1__["createNode"])(tagName, elm, attrs);
       elm.scene = scene;
+      if (attrs.resources) {
+        const resources = attrs.resources;
+        scene.preload(...resources).then(() => {
+          scene.dispatchEvent('load', { resources });
+        });
+      }
       return scene;
     }
     return Object(spritejs__WEBPACK_IMPORTED_MODULE_1__["createNode"])(tagName, attrs);
@@ -22087,6 +22135,7 @@ function createTextNode(text) {
 
 function createComment(text) {
   const comment = document.createComment(text);
+  comment.dataset = {};
   comment.connect = (parent, zOrder) => {
     comment.parent = parent;
     comment.zOrder = zOrder;
@@ -22114,7 +22163,7 @@ function insertBefore(parentNode, newNode, referenceNode) {
       parentNode.text = newNode.textContent;
       // parentNode.childNodes = [newNode]
     }
-    if (newNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["BaseNode"] || newNode.nodeType === document.COMMENT_NODE) {
+    if (newNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["BaseNode"] || newNode.nodeType === document.COMMENT_NODE || parentNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["Scene"]) {
       parentNode.insertBefore(newNode, referenceNode);
     }
   } else {
@@ -22144,7 +22193,7 @@ function appendChild(node, child) {
       node.text = child.textContent;
       // node.childNodes = [child]
     }
-    if (child instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["BaseNode"] || child.nodeType === document.COMMENT_NODE) {
+    if (child instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["BaseNode"] || child.nodeType === document.COMMENT_NODE || node instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["Scene"]) {
       node.appendChild(child);
     } else if (child.nodeType !== document.TEXT_NODE) {
       const nodeType = child.tagName.toLowerCase();
@@ -22163,7 +22212,7 @@ function appendChild(node, child) {
 }
 
 function parentNode(node) {
-  return node.parentNode || node.parent;
+  return node.parent || node.parentNode;
 }
 
 function nextSibling(node) {
@@ -28873,6 +28922,7 @@ function getTransition(option) {
             if (transition.from) {
               states.beforeExit = transition.from;
             }
+            actions[':afterExit'] = transition.action;
           }
           // if (!child.key) {
           //   child.key = `_key${Math.random()}`
@@ -28885,6 +28935,7 @@ function getTransition(option) {
             if (transition.to) {
               states.show = transition.to;
             }
+            actions['beforeShow:'] = transition.action;
           }
         }
         if (hide) {
@@ -28894,6 +28945,7 @@ function getTransition(option) {
             if (transition.from) {
               states.show = transition.from;
             }
+            actions[':hide'] = transition.action;
           }
         }
         attrs.states = Object.assign({}, attrs.states, states);
