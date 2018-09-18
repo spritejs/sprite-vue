@@ -14624,12 +14624,37 @@ var BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_21__["deprecate"
         }
       }
       if (!animation) {
-        var _ref8 = [babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_9___default()({}, fromState), babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_9___default()({}, toState)],
-            _fromState = _ref8[0],
-            _toState = _ref8[1];
+        // const [_fromState, _toState] = [Object.assign({}, fromState), Object.assign({}, toState)];
+        // delete _fromState.__default;
+        // delete _toState.__default;
+        var _fromState = {},
+            _toState = {};
+        babel_runtime_core_js_object_entries__WEBPACK_IMPORTED_MODULE_7___default()(fromState || {}).forEach(function (_ref8) {
+          var _ref9 = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_6___default()(_ref8, 2),
+              key = _ref9[0],
+              value = _ref9[1];
 
-        delete _fromState.__default;
-        delete _toState.__default;
+          if (key !== '__default') {
+            if (typeof value === 'function') {
+              _fromState[key] = _this4.attr(key);
+            } else {
+              _fromState[key] = value;
+            }
+          }
+        });
+        babel_runtime_core_js_object_entries__WEBPACK_IMPORTED_MODULE_7___default()(toState || {}).forEach(function (_ref10) {
+          var _ref11 = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_6___default()(_ref10, 2),
+              key = _ref11[0],
+              value = _ref11[1];
+
+          if (key !== '__default') {
+            if (typeof value === 'function') {
+              _toState[key] = value(_this4.attr(key));
+            } else {
+              _toState[key] = value;
+            }
+          }
+        });
         animation = this.animate([_fromState, _toState], babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_9___default()({ fill: 'forwards' }, action));
         animation.finished.then(function () {
           if (_this4[_changeStateAction] && _this4[_changeStateAction].animation === animation) delete _this4[_changeStateAction];
@@ -14828,12 +14853,12 @@ var BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_21__["deprecate"
                 width = _outerSize[0],
                 height = _outerSize[1];
 
-            var _ref9 = [0, 0, width, height, Math.max(0, borderRadius + borderWidth / 2)],
-                x = _ref9[0],
-                y = _ref9[1],
-                w = _ref9[2],
-                h = _ref9[3],
-                r = _ref9[4];
+            var _ref12 = [0, 0, width, height, Math.max(0, borderRadius + borderWidth / 2)],
+                x = _ref12[0],
+                y = _ref12[1],
+                w = _ref12[2],
+                h = _ref12[3],
+                r = _ref12[4];
 
             Object(_helpers_render__WEBPACK_IMPORTED_MODULE_26__["drawRadiusBox"])(this.context, { x: x, y: y, w: w, h: h, r: r });
             if (this.layer && this.layer.offset) {
@@ -15029,12 +15054,12 @@ var BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_21__["deprecate"
       var bgimage = this.attr('bgimage');
 
       if (this.cache == null || borderWidth || borderRadius || bgcolor || bgimage && bgimage.display !== 'none') {
-        var _ref10 = [borderWidth, borderWidth, clientWidth, clientHeight, Math.max(0, borderRadius - borderWidth / 2)],
-            _x7 = _ref10[0],
-            _y = _ref10[1],
-            _w = _ref10[2],
-            _h = _ref10[3],
-            _r = _ref10[4];
+        var _ref13 = [borderWidth, borderWidth, clientWidth, clientHeight, Math.max(0, borderRadius - borderWidth / 2)],
+            _x7 = _ref13[0],
+            _y = _ref13[1],
+            _w = _ref13[2],
+            _h = _ref13[3],
+            _r = _ref13[4];
 
 
         Object(_helpers_render__WEBPACK_IMPORTED_MODULE_26__["drawRadiusBox"])(drawingContext, { x: _x7, y: _y, w: _w, h: _h, r: _r });
@@ -15096,8 +15121,8 @@ var BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_21__["deprecate"
               if (after) after.call(_this6, states);
               resolve(_this6);
             });
-            _this6.once('state-from-' + fromState, function (_ref11) {
-              var animation = _ref11.animation;
+            _this6.once('state-from-' + fromState, function (_ref14) {
+              var animation = _ref14.animation;
 
               if (animation && resolved) animation.finish();else currentAnimation = animation;
             });
@@ -15616,9 +15641,9 @@ var BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_21__["deprecate"
 
       if (this.hasLayout) {
         var layoutWidth = this.attr('layoutWidth'),
-            layoutHeight = this.attr('layoutHeight');var _ref12 = [layoutWidth !== '' ? layoutWidth : width, layoutHeight !== '' ? layoutHeight : height];
-        width = _ref12[0];
-        height = _ref12[1];
+            layoutHeight = this.attr('layoutHeight');var _ref15 = [layoutWidth !== '' ? layoutWidth : width, layoutHeight !== '' ? layoutHeight : height];
+        width = _ref15[0];
+        height = _ref15[1];
       }
       if (isBorderBox) {
         var borderWidth = this.attr('border').width,
@@ -15891,10 +15916,10 @@ var BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_21__["deprecate"
 
       var attrs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-      babel_runtime_core_js_object_entries__WEBPACK_IMPORTED_MODULE_7___default()(attrs).forEach(function (_ref13) {
-        var _ref14 = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_6___default()(_ref13, 2),
-            prop = _ref14[0],
-            handler = _ref14[1];
+      babel_runtime_core_js_object_entries__WEBPACK_IMPORTED_MODULE_7___default()(attrs).forEach(function (_ref16) {
+        var _ref17 = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_6___default()(_ref16, 2),
+            prop = _ref17[0],
+            handler = _ref17[1];
 
         var getter = function getter() {
           return this.get(prop);
@@ -15966,12 +15991,12 @@ function drawDot9Image(drawingContext, image, clip9, borderWidth, offsetWidth, o
   var w = image.width,
       h = image.height;
 
-  var _ref15 = clip9 || [16, 16, 16, 16],
-      _ref16 = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_6___default()(_ref15, 4),
-      top = _ref16[0],
-      right = _ref16[1],
-      bottom = _ref16[2],
-      left = _ref16[3];
+  var _ref18 = clip9 || [16, 16, 16, 16],
+      _ref19 = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_6___default()(_ref18, 4),
+      top = _ref19[0],
+      right = _ref19[1],
+      bottom = _ref19[2],
+      left = _ref19[3];
 
   var leftTop = [0, 0, left, top],
       rightTop = [w - right, 0, right, top],
@@ -27448,7 +27473,7 @@ $export($export.S, 'Object', {
 /* 357 */
 /***/ (function(module) {
 
-module.exports = {"_from":"spritejs@^2.15.15","_id":"spritejs@2.15.15","_inBundle":false,"_integrity":"sha512-mf7UjwKjcVBiRuF3rFuHEigu9+YJd1cEfU7hcxa8/48+sLeQUOX5muRzUcI6cvlWLwVLG5Fpplfe8bzeERmpEg==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.15.15","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.15.15","saveSpec":null,"fetchSpec":"^2.15.15"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.15.15.tgz","_shasum":"823e77220618990e7cf39534508ad9d940a2c883","_spec":"spritejs@^2.15.15","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.17.17"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^13.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.15.15"};
+module.exports = {"_from":"spritejs@^2.15.17","_id":"spritejs@2.15.17","_inBundle":false,"_integrity":"sha512-oMm6oLdENWnU+Y/ox/W/jco3EjdD4Wus5Ty9qlYMrfbDwitpnNvUyXdIG9YJPf1Nxat0zt85oP/E1bZRbArKlg==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.15.17","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.15.17","saveSpec":null,"fetchSpec":"^2.15.17"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.15.17.tgz","_shasum":"e687fbc1f0a51c7f67f7fd51a9bdcc888d9c59f7","_spec":"spritejs@^2.15.17","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.17.19"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^13.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.15.17"};
 
 /***/ }),
 /* 358 */
