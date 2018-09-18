@@ -17207,10 +17207,10 @@ var SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["deprecate"
         var action = null;
         var toState = states[val] || {};
         var subject = this.subject;
-        if (subject.layer) {
+        if (!subject.__ignoreAction && subject.layer) {
           var fromState = states[oldState],
               actions = this.actions;
-          action = !subject.__ignoreAction && (actions[oldState + ':' + val] || actions[':' + val] || actions[oldState + ':']);
+          action = actions[oldState + ':' + val] || actions[':' + val] || actions[oldState + ':'];
           if (!action || action === 'none') action = { duration: 0 };
 
           var animation = subject.changeState(fromState, toState, action);
@@ -27473,7 +27473,7 @@ $export($export.S, 'Object', {
 /* 357 */
 /***/ (function(module) {
 
-module.exports = {"_from":"spritejs@^2.15.17","_id":"spritejs@2.15.17","_inBundle":false,"_integrity":"sha512-oMm6oLdENWnU+Y/ox/W/jco3EjdD4Wus5Ty9qlYMrfbDwitpnNvUyXdIG9YJPf1Nxat0zt85oP/E1bZRbArKlg==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.15.17","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.15.17","saveSpec":null,"fetchSpec":"^2.15.17"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.15.17.tgz","_shasum":"e687fbc1f0a51c7f67f7fd51a9bdcc888d9c59f7","_spec":"spritejs@^2.15.17","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.17.19"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^13.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.15.17"};
+module.exports = {"_from":"spritejs@^2.15.18","_id":"spritejs@2.15.18","_inBundle":false,"_integrity":"sha512-+66jduwUYDcTy8a9WXVTidT1PlpI0DRFiFYMPXXPs5c7ouRJtxNTlxn41NSJ/aVtAbh322MFhOrbbIN2MOGvXw==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.15.18","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.15.18","saveSpec":null,"fetchSpec":"^2.15.18"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.15.18.tgz","_shasum":"3685dbb082652d3e963343c7608e63cf752646dd","_spec":"spritejs@^2.15.18","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.17.20"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^13.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.15.18"};
 
 /***/ }),
 /* 358 */
@@ -27518,28 +27518,37 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "setStyleScope", function() { return setStyleScope; });
 /* harmony import */ var babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(231);
 /* harmony import */ var babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var web_util_index__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(210);
-/* harmony import */ var spritejs__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(214);
+/* harmony import */ var babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(2);
+/* harmony import */ var babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var web_util_index__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(210);
+/* harmony import */ var spritejs__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(214);
+
 
 
 
 
 function createElement(tagName, vnode) {
-  var isSpriteNode = !Object(web_util_index__WEBPACK_IMPORTED_MODULE_1__["isReservedTag"])(tagName) && Object(spritejs__WEBPACK_IMPORTED_MODULE_2__["isValidNodeType"])(tagName);
+  var isSpriteNode = !Object(web_util_index__WEBPACK_IMPORTED_MODULE_2__["isReservedTag"])(tagName) && Object(spritejs__WEBPACK_IMPORTED_MODULE_3__["isValidNodeType"])(tagName);
   if (tagName.startsWith('s-')) {
     tagName = tagName.slice(2);
-    isSpriteNode = Object(spritejs__WEBPACK_IMPORTED_MODULE_2__["isValidNodeType"])(tagName);
+    isSpriteNode = Object(spritejs__WEBPACK_IMPORTED_MODULE_3__["isValidNodeType"])(tagName);
   }
   if (isSpriteNode) {
     var attrs = {};
     if (vnode.data && vnode.data.attrs) {
       attrs = vnode.data.attrs;
+      var parent = vnode.parent;
+      if (parent && parent.tag.startsWith('vue-component')) {
+        if (parent.data && parent.data.attrs) {
+          attrs = babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_1___default()({}, parent.data.attrs, attrs);
+        }
+      }
     }
     if (tagName === 'scene') {
       var _elm = document.createElement('div');
       if (attrs.id) _elm.id = attrs.id;
       if (!vnode.data.ref) vnode.data.ref = 'scene';
-      var scene = Object(spritejs__WEBPACK_IMPORTED_MODULE_2__["createNode"])(tagName, _elm, attrs);
+      var scene = Object(spritejs__WEBPACK_IMPORTED_MODULE_3__["createNode"])(tagName, _elm, attrs);
       _elm.scene = scene;
       if (attrs.resources) {
         var resources = attrs.resources;
@@ -27549,7 +27558,7 @@ function createElement(tagName, vnode) {
       }
       return scene;
     }
-    return Object(spritejs__WEBPACK_IMPORTED_MODULE_2__["createNode"])(tagName, attrs);
+    return Object(spritejs__WEBPACK_IMPORTED_MODULE_3__["createNode"])(tagName, attrs);
   }
   var elm = document.createElement(tagName);
   if (tagName !== 'select') {
@@ -27563,7 +27572,7 @@ function createElement(tagName, vnode) {
 }
 
 function createElementNS(namespace, tagName) {
-  return document.createElementNS(web_util_index__WEBPACK_IMPORTED_MODULE_1__["namespaceMap"][namespace], tagName);
+  return document.createElementNS(web_util_index__WEBPACK_IMPORTED_MODULE_2__["namespaceMap"][namespace], tagName);
 }
 
 function createTextNode(text) {
@@ -27590,7 +27599,7 @@ function createComment(text) {
   comment.isVisible = function () {
     return false;
   };
-  comment.__data = new spritejs__WEBPACK_IMPORTED_MODULE_2__["DataNode"]({ display: 'none' });
+  comment.__data = new spritejs__WEBPACK_IMPORTED_MODULE_3__["DataNode"]({ display: 'none' });
   comment.contains = function () {
     return false;
   };
@@ -27609,8 +27618,8 @@ function createComment(text) {
 }
 
 function insertBefore(parentNode, newNode, referenceNode) {
-  if (parentNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_2__["BaseNode"]) {
-    if (parentNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_2__["Label"] && newNode.nodeType === document.TEXT_NODE) {
+  if (parentNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["BaseNode"]) {
+    if (parentNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["Label"] && newNode.nodeType === document.TEXT_NODE) {
       parentNode.text = newNode.textContent;
       Object.defineProperty(child, 'textContent', {
         set: function set(text) {
@@ -27624,18 +27633,18 @@ function insertBefore(parentNode, newNode, referenceNode) {
       });
       // parentNode.childNodes = [newNode]
     }
-    if (newNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_2__["BaseNode"] || newNode.nodeType === document.COMMENT_NODE || parentNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_2__["Scene"]) {
+    if (newNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["BaseNode"] || newNode.nodeType === document.COMMENT_NODE || parentNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["Scene"]) {
       parentNode.insertBefore(newNode, referenceNode);
     }
   } else {
-    if (newNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_2__["Scene"]) newNode = newNode.container;
-    if (referenceNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_2__["Scene"]) referenceNode = referenceNode.container;
+    if (newNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["Scene"]) newNode = newNode.container;
+    if (referenceNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["Scene"]) referenceNode = referenceNode.container;
     parentNode.insertBefore(newNode, referenceNode);
   }
 }
 
 function removeChild(node, child) {
-  if (child instanceof spritejs__WEBPACK_IMPORTED_MODULE_2__["Scene"]) {
+  if (child instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["Scene"]) {
     node.removeChild(child.container);
   } else {
     node.removeChild(child);
@@ -27643,14 +27652,14 @@ function removeChild(node, child) {
 }
 
 function appendChild(node, child) {
-  if (child instanceof spritejs__WEBPACK_IMPORTED_MODULE_2__["Scene"]) {
+  if (child instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["Scene"]) {
     node.appendChild(child.container);
     child.parent = node;
     setTimeout(function () {
       child.updateViewport();
     });
-  } else if (node instanceof spritejs__WEBPACK_IMPORTED_MODULE_2__["BaseNode"]) {
-    if (node instanceof spritejs__WEBPACK_IMPORTED_MODULE_2__["Label"] && child.nodeType === document.TEXT_NODE) {
+  } else if (node instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["BaseNode"]) {
+    if (node instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["Label"] && child.nodeType === document.TEXT_NODE) {
       node.text = child.textContent;
       Object.defineProperty(child, 'textContent', {
         set: function set(text) {
@@ -27663,13 +27672,13 @@ function appendChild(node, child) {
         configurable: true
       });
     }
-    if (child instanceof spritejs__WEBPACK_IMPORTED_MODULE_2__["BaseNode"] || child.nodeType === document.COMMENT_NODE || node instanceof spritejs__WEBPACK_IMPORTED_MODULE_2__["Scene"]) {
+    if (child instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["BaseNode"] || child.nodeType === document.COMMENT_NODE || node instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["Scene"]) {
       node.appendChild(child);
     } else if (child.nodeType !== document.TEXT_NODE) {
       var nodeType = child.tagName.toLowerCase();
       if (nodeType) {
         console.error('Node#' + nodeType + ' is not a sprite node.', child);
-        if (Object(spritejs__WEBPACK_IMPORTED_MODULE_2__["isValidNodeType"])(nodeType)) {
+        if (Object(spritejs__WEBPACK_IMPORTED_MODULE_3__["isValidNodeType"])(nodeType)) {
           console.warn('\'' + nodeType + '\' is a reserved tag name, Use \'s-' + nodeType + '\' instead.');
         }
       } else {
@@ -27686,7 +27695,7 @@ function parentNode(node) {
 }
 
 function nextSibling(node) {
-  if (node instanceof spritejs__WEBPACK_IMPORTED_MODULE_2__["BaseNode"]) {
+  if (node instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["BaseNode"]) {
     if (node.parent) {
       var idx = node.parent.children.indexOf(node);
       return node.parent.children[idx + 1];
@@ -27701,7 +27710,7 @@ function tagName(node) {
 }
 
 function setTextContent(node, text) {
-  if (node instanceof spritejs__WEBPACK_IMPORTED_MODULE_2__["Label"]) {
+  if (node instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["Label"]) {
     node.text = text;
   } else {
     node.textContent = text;

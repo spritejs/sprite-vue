@@ -13,6 +13,12 @@ export function createElement (tagName: string, vnode: VNode): Element {
     let attrs = {}
     if (vnode.data && vnode.data.attrs) {
       attrs = vnode.data.attrs
+      const parent = vnode.parent
+      if (parent && parent.tag.startsWith('vue-component')) {
+        if (parent.data && parent.data.attrs) {
+          attrs = Object.assign({}, parent.data.attrs, attrs)
+        }
+      }
     }
     if (tagName === 'scene') {
       const elm = document.createElement('div')
