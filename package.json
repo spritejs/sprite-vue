@@ -1,6 +1,6 @@
 {
   "name": "sprite-vue",
-  "version": "0.9.11",
+  "version": "0.9.12",
   "description": "A Vue.js project for SpriteJS",
   "author": "akira-cn <akira.cn@gmail.com>",
   "main": "src/index.js",

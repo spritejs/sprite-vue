@@ -191,7 +191,9 @@ export default {
       }
     })
     if (children.length === 1) {
-      return children[0]
+      const rawChild = children[0]
+      rawChild._hasTransition = true
+      return rawChild
     }
     const group = createElement('group', children)
     group.data = {

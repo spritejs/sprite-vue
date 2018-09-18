@@ -27537,10 +27537,20 @@ function createElement(tagName, vnode) {
     var attrs = {};
     if (vnode.data && vnode.data.attrs) {
       attrs = vnode.data.attrs;
-      var parent = vnode.parent;
-      if (parent && parent.tag.startsWith('vue-component')) {
-        if (parent.data && parent.data.attrs) {
-          attrs = babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_1___default()({}, parent.data.attrs, attrs);
+      if (!vnode._hasTransition) {
+        // set transition attributes
+        var parent = vnode.parent;
+        while (parent && parent.tag.startsWith('vue-component-')) {
+          if (parent._hasTransition) {
+            var _parent$data$attrs = parent.data.attrs,
+                states = _parent$data$attrs.states,
+                actions = _parent$data$attrs.actions;
+
+            attrs.states = babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_1___default()({}, states, attrs.states);
+            attrs.actions = babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_1___default()({}, actions, attrs.actions);
+            break;
+          }
+          parent = parent.parent;
         }
       }
     }
@@ -34677,7 +34687,9 @@ function getTransition(option) {
       }
     });
     if (children.length === 1) {
-      return children[0];
+      var rawChild = children[0];
+      rawChild._hasTransition = true;
+      return rawChild;
     }
     var group = createElement('group', children);
     group.data = {

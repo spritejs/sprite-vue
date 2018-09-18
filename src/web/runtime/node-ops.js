@@ -13,10 +13,17 @@ export function createElement (tagName: string, vnode: VNode): Element {
     let attrs = {}
     if (vnode.data && vnode.data.attrs) {
       attrs = vnode.data.attrs
-      const parent = vnode.parent
-      if (parent && parent.tag.startsWith('vue-component')) {
-        if (parent.data && parent.data.attrs) {
-          attrs = Object.assign({}, parent.data.attrs, attrs)
+      if (!vnode._hasTransition) {
+        // set transition attributes
+        let parent = vnode.parent
+        while (parent && parent.tag.startsWith('vue-component-')) {
+          if (parent._hasTransition) {
+            const { states, actions } = parent.data.attrs
+            attrs.states = Object.assign({}, states, attrs.states)
+            attrs.actions = Object.assign({}, actions, attrs.actions)
+            break
+          }
+          parent = parent.parent
         }
       }
     }
