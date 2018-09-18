@@ -7,7 +7,7 @@
 [例子](https://code.h5jun.com/najo/edit?js,output)
 
 ```html
-<script src="https://s5.ssl.qhres.com/!8ca3d13b/sprite-vue.min.js"></script>
+<script src="https://s2.ssl.qhres.com/!716f96ee/sprite-vue.min.js"></script>
 <div id="app"></div>
 <script>
 const { Vue } = spritevue;

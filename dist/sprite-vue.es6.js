@@ -22169,6 +22169,15 @@ function insertBefore(parentNode, newNode, referenceNode) {
   if (parentNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["BaseNode"]) {
     if (parentNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["Label"] && newNode.nodeType === document.TEXT_NODE) {
       parentNode.text = newNode.textContent;
+      Object.defineProperty(child, 'textContent', {
+        set(text) {
+          node.text = text;
+        },
+        get() {
+          return node.text;
+        },
+        configurable: true
+      });
       // parentNode.childNodes = [newNode]
     }
     if (newNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["BaseNode"] || newNode.nodeType === document.COMMENT_NODE || parentNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["Scene"]) {
@@ -22199,7 +22208,15 @@ function appendChild(node, child) {
   } else if (node instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["BaseNode"]) {
     if (node instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["Label"] && child.nodeType === document.TEXT_NODE) {
       node.text = child.textContent;
-      // node.childNodes = [child]
+      Object.defineProperty(child, 'textContent', {
+        set(text) {
+          node.text = text;
+        },
+        get() {
+          return node.text;
+        },
+        configurable: true
+      });
     }
     if (child instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["BaseNode"] || child.nodeType === document.COMMENT_NODE || node instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["Scene"]) {
       node.appendChild(child);

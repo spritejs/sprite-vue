@@ -76,6 +76,15 @@ export function insertBefore (parentNode: Node, newNode: Node, referenceNode: No
   if (parentNode instanceof BaseNode) {
     if (parentNode instanceof Label && newNode.nodeType === document.TEXT_NODE) {
       parentNode.text = newNode.textContent
+      Object.defineProperty(child, 'textContent', {
+        set (text) {
+          node.text = text
+        },
+        get () {
+          return node.text
+        },
+        configurable: true
+      })
       // parentNode.childNodes = [newNode]
     }
     if (newNode instanceof BaseNode || newNode.nodeType === document.COMMENT_NODE || parentNode instanceof Scene) {
@@ -106,7 +115,15 @@ export function appendChild (node: Node, child: Node) {
   } else if (node instanceof BaseNode) {
     if (node instanceof Label && child.nodeType === document.TEXT_NODE) {
       node.text = child.textContent
-      // node.childNodes = [child]
+      Object.defineProperty(child, 'textContent', {
+        set (text) {
+          node.text = text
+        },
+        get () {
+          return node.text
+        },
+        configurable: true
+      })
     }
     if (child instanceof BaseNode || child.nodeType === document.COMMENT_NODE || node instanceof Scene) {
       node.appendChild(child)

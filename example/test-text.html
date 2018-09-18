@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Example</title>
+  <script src="/js/sprite-vue.js"></script>
+  <!-- <script src="/js/sprite-vue-debug.js"></script> -->
+  <style>
+  #container {
+    width: 600px;
+    height: 600px;
+    position: relative;
+  }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+  const Vue = spritevue.Vue
+
+  new Vue({
+    el: '#app',
+    data () {
+      return {
+        text: 'Hello World',
+        font: '48px Arial'
+      }
+    },
+    methods: {
+      clicked () {
+        console.log(1)
+        this.text = 'abc'
+      }
+    },
+    template: `
+    <scene :viewport="[300, 300]" :resolution="[600, 600]">
+      <layer>
+        <s-label @click="clicked" :font="font">{{text}}</s-label>
+      </layer>
+    </scene>
+    `
+  })
+  </script>
+</body>
+</html>
