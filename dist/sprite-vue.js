@@ -161,6 +161,9 @@ function compileProto() {
   } else if (proto.data) {
     var exData = extractStates(null, states, actions);
     proto.data = babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_0___default()({}, proto.data, exData);
+  } else if (states || actions) {
+    var _exData = extractStates(null, states, actions);
+    proto.data = babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_0___default()({}, _exData);
   }
 
   delete proto.states;

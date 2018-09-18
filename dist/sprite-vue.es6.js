@@ -141,6 +141,9 @@ function compileProto(proto = {}) {
   } else if (proto.data) {
     const exData = extractStates(null, states, actions);
     proto.data = Object.assign({}, proto.data, exData);
+  } else if (states || actions) {
+    const exData = extractStates(null, states, actions);
+    proto.data = Object.assign({}, exData);
   }
 
   delete proto.states;
