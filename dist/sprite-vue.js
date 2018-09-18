@@ -31211,6 +31211,11 @@ function locateNode(vnode) {
       var states = style.states;
       if (!value && states.hide) {
         var beforeHide = { __default: true };
+        if (states.beforeShow) {
+          babel_runtime_core_js_object_keys__WEBPACK_IMPORTED_MODULE_0___default()(states.beforeShow).forEach(function (key) {
+            beforeHide[key] = style[key];
+          });
+        }
         babel_runtime_core_js_object_keys__WEBPACK_IMPORTED_MODULE_0___default()(states.hide).forEach(function (key) {
           beforeHide[key] = style[key];
         });

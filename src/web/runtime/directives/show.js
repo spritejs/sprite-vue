@@ -25,6 +25,11 @@ export default {
       const states = style.states
       if (!value && states.hide) {
         const beforeHide = { __default: true }
+        if (states.beforeShow) {
+          Object.keys(states.beforeShow).forEach((key) => {
+            beforeHide[key] = style[key]
+          })
+        }
         Object.keys(states.hide).forEach((key) => {
           beforeHide[key] = style[key]
         })
