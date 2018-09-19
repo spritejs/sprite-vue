@@ -131,10 +131,20 @@ function getTransition (option) {
 }
 
 export default {
-  props: ['enter', 'exit', 'show', 'hide', 'enterMode', 'exitMode'],
+  props: ['enter', 'exit', 'show', 'hide', 'enterMode', 'exitMode', 'attrs'],
   render (createElement) {
     const children = this.$slots.default
-    const { enter, exit, show, hide, enterMode, exitMode } = this
+    let { enter, exit, show, hide, enterMode, exitMode } = this
+
+    if (this.attrs) {
+      if (this.attrs.enter) enter = enter || this.attrs.enter
+      if (this.attrs.exit) exit = exit || this.attrs.exit
+      if (this.attrs.show) show = show || this.attrs.show
+      if (this.attrs.hide) hide = hide || this.attrs.hide
+      if (this.attrs.enterMode) enterMode = enterMode || this.attrs.enterMode
+      if (this.attrs.exitMode) exitMode = exitMode || this.attrs.exitMode
+    }
+
     children.forEach((child) => {
       if (child.data && child.data.attrs) {
         const attrs = child.data.attrs

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Example</title>
+  <script src="/js/sprite-vue.js"></script>
+  <!-- <script src="/js/sprite-vue-debug.js"></script> -->
+  <style>
+  #container {
+    width: 600px;
+    height: 600px;
+    position: relative;
+  }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+  const Vue = spritevue.Vue
+
+  Vue.component('traffic-light', {
+    props: [
+      'color',
+      'radius',
+      'x',
+      'y'
+    ],
+    template: `<sprite ref="circle" anchor="0.5" :x="x" :y="y" :size="[2*radius, 2*radius]" :bgcolor="color" 
+  :borderRadius="radius"></sprite>`
+  })
+
+  const app = new Vue({
+    el: '#app',
+    data () {
+      return {
+        state: true
+      }
+    },
+    mounted () {
+      setInterval(() => { this.state = !this.state }, 3000)
+    },
+    template: `
+    <scene id="container" :viewport="[300, 300]" :resolution="[600, 600]">
+      <layer>
+        <s-transition v-if="state" key="t1" :enter="['slide-in-top', 600]" :exit="['slide-out-right', 600]"
+          :attrs="{enterMode:'onebyone', exitMode: 'onebyone-reverse'}">
+          <traffic-light radius="50" x="150" y="300" color="red"></traffic-light>
+          <traffic-light radius="50" x="300" y="300" color="orange"></traffic-light>
+          <traffic-light radius="50" x="450" y="300" color="green"></traffic-light>
+        </s-transition>
+      </layer>
+    </scene>
+    `
+  })
+  </script>
+</body>
+</html>
