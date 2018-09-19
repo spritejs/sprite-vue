@@ -2,6 +2,9 @@
 
 > Vue.js 支持 SpriteJS 的 Runtime
 
+- [文档](http://vue.spritejs.org) 
+- [Live DEMO](https://codepen.io/collection/nVbpGo/)
+
 ## 直接使用
 
 [例子](https://code.h5jun.com/najo/edit?js,output)
@@ -46,5 +49,3 @@ import { Vue, spritejs } from 'sprite-vue'
 ```
 
 Enjoy~
-
-例子： https://github.com/spritejs/sprite-vue-demo
