@@ -17011,7 +17011,7 @@ var SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["deprecate"
       this.set('zIndex', val);
       var subject = this.subject;
       if (subject.parent) {
-        subject.parent.children.sort(function (a, b) {
+        subject.parent.childNodes.sort(function (a, b) {
           if (a.zIndex === b.zIndex) {
             return a.zOrder - b.zOrder;
           }
@@ -20611,8 +20611,8 @@ var Layer = function (_BaseNode) {
     if (context.canvas && context.canvas.addEventListener) {
       context.canvas.addEventListener('DOMNodeRemovedFromDocument', function () {
         _this._savePlaybackRate = _this.timeline.playbackRate;
-        _this._saveChildren = [].concat(babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_2___default()(_this.children));
-        _this.remove.apply(_this, babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_2___default()(_this.children));
+        _this._saveChildren = [].concat(babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_2___default()(_this[_children]));
+        _this.remove.apply(_this, babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_2___default()(_this[_children]));
         _this.timeline.playbackRate = 0;
       });
       context.canvas.addEventListener('DOMNodeInsertedIntoDocument', function () {
@@ -20967,7 +20967,9 @@ var Layer = function (_BaseNode) {
   }, {
     key: 'children',
     get: function get() {
-      return this[_children];
+      return this[_children].filter(function (child) {
+        return child instanceof _basenode__WEBPACK_IMPORTED_MODULE_13__["default"] && !(child instanceof _datanode__WEBPACK_IMPORTED_MODULE_14__["default"]);
+      });
     }
   }, {
     key: 'childNodes',
@@ -21178,8 +21180,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _basesprite__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(274);
 /* harmony import */ var _nodetype__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(294);
 /* harmony import */ var _helpers_path__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(309);
-/* harmony import */ var _layout__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(311);
-/* harmony import */ var _helpers_group__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(313);
+/* harmony import */ var _basenode__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(291);
+/* harmony import */ var _datanode__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(296);
+/* harmony import */ var _layout__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(311);
+/* harmony import */ var _helpers_group__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(313);
 
 
 
@@ -21195,6 +21199,10 @@ __webpack_require__.r(__webpack_exports__);
 var _dec, _dec2, _dec3, _dec4, _dec5, _dec6, _desc, _value, _class, _class2, _temp, _desc2, _value2, _class3, _class4, _temp2;
 
 var _applyDecoratedDescriptor = __webpack_require__(286);
+
+
+
+
 
 
 
@@ -21339,7 +21347,7 @@ var Group = (_class3 = (_temp2 = _class4 = function (_BaseSprite) {
     value: function cloneNode(deepCopy) {
       var node = babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_3___default()(Group.prototype.__proto__ || babel_runtime_core_js_object_get_prototype_of__WEBPACK_IMPORTED_MODULE_5___default()(Group.prototype), 'cloneNode', this).call(this);
       if (deepCopy) {
-        var children = this.children;
+        var children = this[_children];
         children.forEach(function (child) {
           var subNode = child.cloneNode(deepCopy);
           node.append(subNode);
@@ -21444,7 +21452,7 @@ var Group = (_class3 = (_temp2 = _class4 = function (_BaseSprite) {
   }, {
     key: 'relayout',
     value: function relayout() {
-      var items = this.children.filter(function (child) {
+      var items = this[_children].filter(function (child) {
         if (child.hasLayout) {
           child.attr('layoutWidth', null);
           child.attr('layoutHeight', null);
@@ -21555,7 +21563,9 @@ var Group = (_class3 = (_temp2 = _class4 = function (_BaseSprite) {
   }, {
     key: 'children',
     get: function get() {
-      return this[_children];
+      return this[_children].filter(function (child) {
+        return child instanceof _basenode__WEBPACK_IMPORTED_MODULE_15__["default"] && !(child instanceof _datanode__WEBPACK_IMPORTED_MODULE_16__["default"]);
+      });
     }
   }, {
     key: 'childNodes',
@@ -21604,8 +21614,8 @@ var Group = (_class3 = (_temp2 = _class4 = function (_BaseSprite) {
 }(_basesprite__WEBPACK_IMPORTED_MODULE_12__["default"]), _class4.Attr = GroupAttr, _temp2), (_applyDecoratedDescriptor(_class3.prototype, 'contentSize', [_utils__WEBPACK_IMPORTED_MODULE_11__["flow"]], babel_runtime_core_js_object_get_own_property_descriptor__WEBPACK_IMPORTED_MODULE_4___default()(_class3.prototype, 'contentSize'), _class3.prototype)), _class3);
 
 
-babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_0___default()(Group.prototype, _helpers_group__WEBPACK_IMPORTED_MODULE_16__["default"]);
-Group.applyLayout('flex', _layout__WEBPACK_IMPORTED_MODULE_15__["flexLayout"]);
+babel_runtime_core_js_object_assign__WEBPACK_IMPORTED_MODULE_0___default()(Group.prototype, _helpers_group__WEBPACK_IMPORTED_MODULE_18__["default"]);
+Group.applyLayout('flex', _layout__WEBPACK_IMPORTED_MODULE_17__["flexLayout"]);
 
 Object(_nodetype__WEBPACK_IMPORTED_MODULE_13__["registerNodeType"])('group', Group, true);
 
@@ -22449,12 +22459,12 @@ var _removeTask = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_0___defa
     var update = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
 
     var _append = function _append() {
-      var children = _this.children;
+      var children = _this.childNodes;
       children.push(sprite);
 
       _this[_zOrder] = _this[_zOrder] || 0;
       sprite.connect(_this, _this[_zOrder]++);
-      Object(_utils__WEBPACK_IMPORTED_MODULE_1__["sortOrderedSprites"])(_this.children);
+      Object(_utils__WEBPACK_IMPORTED_MODULE_1__["sortOrderedSprites"])(_this.childNodes);
 
       for (var i = children.length - 1; i > 0; i--) {
         var a = children[i],
@@ -22502,7 +22512,7 @@ var _removeTask = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_0___defa
   removeChild: function removeChild(child) {
     if (child[_removeTask]) return child[_removeTask];
 
-    var idx = this.children.indexOf(child);
+    var idx = this.childNodes.indexOf(child);
     if (idx === -1) {
       return null;
     }
@@ -22511,11 +22521,11 @@ var _removeTask = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_0___defa
     function remove(sprite) {
       delete child[_removeTask];
       // re-calculate index because it's async...
-      var idx = that.children.indexOf(child);
+      var idx = that.childNodes.indexOf(child);
       if (idx === -1) {
         return null;
       }
-      that.children.splice(idx, 1);
+      that.childNodes.splice(idx, 1);
       if (sprite.isVisible() || sprite.lastRenderBox) {
         sprite.forceUpdate();
       }
@@ -22537,7 +22547,7 @@ var _removeTask = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_0___defa
   clear: function clear() {
     var _this3 = this;
 
-    var children = this.children.slice(0);
+    var children = this.childNodes.slice(0);
     children.forEach(function (child) {
       return _this3.removeChild(child);
     });
@@ -22565,12 +22575,12 @@ var _removeTask = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_0___defa
     if (refchild == null) {
       return this.appendChild(newchild);
     }
-    var idx = this.children.indexOf(refchild);
+    var idx = this.childNodes.indexOf(refchild);
     var refZOrder = refchild.zOrder;
     if (idx >= 0) {
       var _insert = function _insert() {
-        for (var i = 0; i < _this5.children.length; i++) {
-          var child = _this5.children[i],
+        for (var i = 0; i < _this5.childNodes.length; i++) {
+          var child = _this5.childNodes[i],
               zOrder = child.zOrder;
           if (zOrder >= refZOrder) {
             delete child.zOrder;
@@ -22582,9 +22592,9 @@ var _removeTask = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_0___defa
           }
         }
 
-        _this5.children.push(newchild);
+        _this5.childNodes.push(newchild);
         newchild.connect(_this5, refZOrder);
-        Object(_utils__WEBPACK_IMPORTED_MODULE_1__["sortOrderedSprites"])(_this5.children);
+        Object(_utils__WEBPACK_IMPORTED_MODULE_1__["sortOrderedSprites"])(_this5.childNodes);
         newchild.forceUpdate();
 
         _this5[_zOrder] = _this5[_zOrder] || 0;
@@ -26516,7 +26526,7 @@ var ExLayer = function (_Layer) {
         _this2.outputContext.scale(ratio, ratio);
       };
 
-      this.children.forEach(function (child) {
+      this.childNodes.forEach(function (child) {
         delete child.lastRenderBox;
         child.forceUpdate();
       });
@@ -26560,7 +26570,7 @@ var ExLayer = function (_Layer) {
 
 
                 context.drawImage(this.canvas, 0, 0);
-                children = this.children.map(function (child) {
+                children = this.childNodes.map(function (child) {
                   return child.serialize();
                 });
                 return _context.abrupt('return', { context: context, children: children });
@@ -26600,8 +26610,8 @@ var ExLayer = function (_Layer) {
         _this3.appendChild(node, false);
       });
 
-      for (var i = 0; i < this.children.length; i++) {
-        var child = this.children[i];
+      for (var i = 0; i < this.childNodes.length; i++) {
+        var child = this.childNodes[i];
         child.dispatchEvent('update', {
           target: child, context: child.context, renderBox: child.renderBox, lastRenderBox: child.lastRenderBox
         }, true);
@@ -26609,7 +26619,7 @@ var ExLayer = function (_Layer) {
         child.lastRenderBox = child.renderBox;
       }
 
-      return this.children;
+      return this.childNodes;
     }
   }, {
     key: 'id',
@@ -27380,7 +27390,9 @@ var _default = function (_BaseNode) {
   }, {
     key: 'children',
     get: function get() {
-      return this.layers;
+      return this.layers.filter(function (layer) {
+        return layer.canvas;
+      });
     }
   }, {
     key: 'childNodes',
@@ -27601,7 +27613,7 @@ $export($export.S, 'Object', {
 /* 360 */
 /***/ (function(module) {
 
-module.exports = {"_from":"spritejs@^2.16.1","_id":"spritejs@2.16.1","_inBundle":false,"_integrity":"sha512-9bsBRyAdEjpi2oIoYJcYVKFUBCu1XiSWptnrrl5eDzKk3ji2/8pk3luzRDWCnRc9IDMfTRGsuWOH0e87CDnMqw==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.16.1","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.16.1","saveSpec":null,"fetchSpec":"^2.16.1"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.16.1.tgz","_shasum":"8b8dfb6304be96d16c81bce32c470455c2cc0124","_spec":"spritejs@^2.16.1","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.18.0"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^13.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.16.1"};
+module.exports = {"_from":"spritejs@^2.16.2","_id":"spritejs@2.16.2","_inBundle":false,"_integrity":"sha512-sTN47yjdbDMAN+sIe72TmyxwhZEiD9kkZuYPjceZ12n3Y4ujbW764hmc0wyBYKRjwq55AudoYT0v8Zqvjuiofg==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.16.2","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.16.2","saveSpec":null,"fetchSpec":"^2.16.2"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.16.2.tgz","_shasum":"4f09e711d16ae0edd977e054d21960707956d64d","_spec":"spritejs@^2.16.2","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.18.1"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^13.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.16.2"};
 
 /***/ }),
 /* 361 */
@@ -27857,8 +27869,8 @@ function parentNode(node) {
 function nextSibling(node) {
   if (node instanceof spritejs__WEBPACK_IMPORTED_MODULE_4__["BaseNode"]) {
     if (node.parent) {
-      var idx = node.parent.children.indexOf(node);
-      return node.parent.children[idx + 1];
+      var idx = node.parent.childNodes.indexOf(node);
+      return node.parent.childNodes[idx + 1];
     }
     return null;
   }

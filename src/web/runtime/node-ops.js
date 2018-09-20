@@ -183,8 +183,8 @@ export function parentNode (node: Node): ?Node {
 export function nextSibling (node: Node): ?Node {
   if (node instanceof BaseNode) {
     if (node.parent) {
-      const idx = node.parent.children.indexOf(node)
-      return node.parent.children[idx + 1]
+      const idx = node.parent.childNodes.indexOf(node)
+      return node.parent.childNodes[idx + 1]
     }
     return null
   }

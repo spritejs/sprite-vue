@@ -14115,7 +14115,7 @@ let SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"]
     this.set('zIndex', val);
     const subject = this.subject;
     if (subject.parent) {
-      subject.parent.children.sort((a, b) => {
+      subject.parent.childNodes.sort((a, b) => {
         if (a.zIndex === b.zIndex) {
           return a.zOrder - b.zOrder;
         }
@@ -17125,8 +17125,8 @@ let Layer = class Layer extends _basenode__WEBPACK_IMPORTED_MODULE_2__["default"
     if (context.canvas && context.canvas.addEventListener) {
       context.canvas.addEventListener('DOMNodeRemovedFromDocument', () => {
         this._savePlaybackRate = this.timeline.playbackRate;
-        this._saveChildren = [...this.children];
-        this.remove(...this.children);
+        this._saveChildren = [...this[_children]];
+        this.remove(...this[_children]);
         this.timeline.playbackRate = 0;
       });
       context.canvas.addEventListener('DOMNodeInsertedIntoDocument', () => {
@@ -17164,7 +17164,7 @@ let Layer = class Layer extends _basenode__WEBPACK_IMPORTED_MODULE_2__["default"
   }
 
   get children() {
-    return this[_children];
+    return this[_children].filter(child => child instanceof _basenode__WEBPACK_IMPORTED_MODULE_2__["default"] && !(child instanceof _datanode__WEBPACK_IMPORTED_MODULE_3__["default"]));
   }
 
   get childNodes() {
@@ -17567,11 +17567,17 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _basesprite__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(189);
 /* harmony import */ var _nodetype__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(195);
 /* harmony import */ var _helpers_path__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(209);
-/* harmony import */ var _layout__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(211);
-/* harmony import */ var _helpers_group__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(213);
+/* harmony import */ var _basenode__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(192);
+/* harmony import */ var _datanode__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(197);
+/* harmony import */ var _layout__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(211);
+/* harmony import */ var _helpers_group__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(213);
 var _dec, _dec2, _dec3, _dec4, _dec5, _dec6, _desc, _value, _class, _class2, _temp, _desc2, _value2, _class3, _class4, _temp2;
 
 const _applyDecoratedDescriptor = __webpack_require__(190);
+
+
+
+
 
 
 
@@ -17697,7 +17703,7 @@ let Group = (_class3 = (_temp2 = _class4 = class Group extends _basesprite__WEBP
   cloneNode(deepCopy) {
     const node = super.cloneNode();
     if (deepCopy) {
-      const children = this.children;
+      const children = this[_children];
       children.forEach(child => {
         const subNode = child.cloneNode(deepCopy);
         node.append(subNode);
@@ -17707,7 +17713,7 @@ let Group = (_class3 = (_temp2 = _class4 = class Group extends _basesprite__WEBP
   }
 
   get children() {
-    return this[_children];
+    return this[_children].filter(child => child instanceof _basenode__WEBPACK_IMPORTED_MODULE_4__["default"] && !(child instanceof _datanode__WEBPACK_IMPORTED_MODULE_5__["default"]));
   }
 
   get childNodes() {
@@ -17831,7 +17837,7 @@ let Group = (_class3 = (_temp2 = _class4 = class Group extends _basesprite__WEBP
   }
 
   relayout() {
-    const items = this.children.filter(child => {
+    const items = this[_children].filter(child => {
       if (child.hasLayout) {
         child.attr('layoutWidth', null);
         child.attr('layoutHeight', null);
@@ -17913,8 +17919,8 @@ let Group = (_class3 = (_temp2 = _class4 = class Group extends _basesprite__WEBP
 }, _class4.Attr = GroupAttr, _temp2), (_applyDecoratedDescriptor(_class3.prototype, 'contentSize', [_utils__WEBPACK_IMPORTED_MODULE_0__["flow"]], Object.getOwnPropertyDescriptor(_class3.prototype, 'contentSize'), _class3.prototype)), _class3);
 
 
-Object.assign(Group.prototype, _helpers_group__WEBPACK_IMPORTED_MODULE_5__["default"]);
-Group.applyLayout('flex', _layout__WEBPACK_IMPORTED_MODULE_4__["flexLayout"]);
+Object.assign(Group.prototype, _helpers_group__WEBPACK_IMPORTED_MODULE_7__["default"]);
+Group.applyLayout('flex', _layout__WEBPACK_IMPORTED_MODULE_6__["flexLayout"]);
 
 Object(_nodetype__WEBPACK_IMPORTED_MODULE_2__["registerNodeType"])('group', Group, true);
 
@@ -18682,12 +18688,12 @@ const _removeTask = Symbol('removeTask');
 /* harmony default export */ __webpack_exports__["default"] = ({
   appendChild(sprite, update = true) {
     const _append = () => {
-      const children = this.children;
+      const children = this.childNodes;
       children.push(sprite);
 
       this[_zOrder] = this[_zOrder] || 0;
       sprite.connect(this, this[_zOrder]++);
-      Object(_utils__WEBPACK_IMPORTED_MODULE_0__["sortOrderedSprites"])(this.children);
+      Object(_utils__WEBPACK_IMPORTED_MODULE_0__["sortOrderedSprites"])(this.childNodes);
 
       for (let i = children.length - 1; i > 0; i--) {
         const a = children[i],
@@ -18729,7 +18735,7 @@ const _removeTask = Symbol('removeTask');
   removeChild(child) {
     if (child[_removeTask]) return child[_removeTask];
 
-    const idx = this.children.indexOf(child);
+    const idx = this.childNodes.indexOf(child);
     if (idx === -1) {
       return null;
     }
@@ -18738,11 +18744,11 @@ const _removeTask = Symbol('removeTask');
     function remove(sprite) {
       delete child[_removeTask];
       // re-calculate index because it's async...
-      const idx = that.children.indexOf(child);
+      const idx = that.childNodes.indexOf(child);
       if (idx === -1) {
         return null;
       }
-      that.children.splice(idx, 1);
+      that.childNodes.splice(idx, 1);
       if (sprite.isVisible() || sprite.lastRenderBox) {
         sprite.forceUpdate();
       }
@@ -18762,7 +18768,7 @@ const _removeTask = Symbol('removeTask');
     return remove(child);
   },
   clear() {
-    const children = this.children.slice(0);
+    const children = this.childNodes.slice(0);
     children.forEach(child => this.removeChild(child));
     return this;
   },
@@ -18780,12 +18786,12 @@ const _removeTask = Symbol('removeTask');
     if (refchild == null) {
       return this.appendChild(newchild);
     }
-    const idx = this.children.indexOf(refchild);
+    const idx = this.childNodes.indexOf(refchild);
     const refZOrder = refchild.zOrder;
     if (idx >= 0) {
       const _insert = () => {
-        for (let i = 0; i < this.children.length; i++) {
-          const child = this.children[i],
+        for (let i = 0; i < this.childNodes.length; i++) {
+          const child = this.childNodes[i],
                 zOrder = child.zOrder;
           if (zOrder >= refZOrder) {
             delete child.zOrder;
@@ -18797,9 +18803,9 @@ const _removeTask = Symbol('removeTask');
           }
         }
 
-        this.children.push(newchild);
+        this.childNodes.push(newchild);
         newchild.connect(this, refZOrder);
-        Object(_utils__WEBPACK_IMPORTED_MODULE_0__["sortOrderedSprites"])(this.children);
+        Object(_utils__WEBPACK_IMPORTED_MODULE_0__["sortOrderedSprites"])(this.childNodes);
         newchild.forceUpdate();
 
         this[_zOrder] = this[_zOrder] || 0;
@@ -21442,7 +21448,7 @@ let ExLayer = class ExLayer extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["La
       this.outputContext.scale(ratio, ratio);
     };
 
-    this.children.forEach(child => {
+    this.childNodes.forEach(child => {
       delete child.lastRenderBox;
       child.forceUpdate();
     });
@@ -21483,7 +21489,7 @@ let ExLayer = class ExLayer extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["La
           context = snapshotCanvas.getContext('2d');
 
     context.drawImage(this.canvas, 0, 0);
-    const children = this.children.map(child => child.serialize());
+    const children = this.childNodes.map(child => child.serialize());
     return { context, children };
   }
 
@@ -21504,8 +21510,8 @@ let ExLayer = class ExLayer extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["La
       this.appendChild(node, false);
     });
 
-    for (let i = 0; i < this.children.length; i++) {
-      const child = this.children[i];
+    for (let i = 0; i < this.childNodes.length; i++) {
+      const child = this.childNodes[i];
       child.dispatchEvent('update', {
         target: child, context: child.context, renderBox: child.renderBox, lastRenderBox: child.lastRenderBox
       }, true);
@@ -21513,7 +21519,7 @@ let ExLayer = class ExLayer extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["La
       child.lastRenderBox = child.renderBox;
     }
 
-    return this.children;
+    return this.childNodes;
   }
 
   get zIndex() {
@@ -21664,7 +21670,7 @@ let _default = class _default extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["
   }
 
   get children() {
-    return this.layers;
+    return this.layers.filter(layer => layer.canvas);
   }
 
   get childNodes() {
@@ -22162,7 +22168,7 @@ let _default = class _default extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["
 /* 249 */
 /***/ (function(module) {
 
-module.exports = {"_from":"spritejs@^2.16.1","_id":"spritejs@2.16.1","_inBundle":false,"_integrity":"sha512-9bsBRyAdEjpi2oIoYJcYVKFUBCu1XiSWptnrrl5eDzKk3ji2/8pk3luzRDWCnRc9IDMfTRGsuWOH0e87CDnMqw==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.16.1","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.16.1","saveSpec":null,"fetchSpec":"^2.16.1"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.16.1.tgz","_shasum":"8b8dfb6304be96d16c81bce32c470455c2cc0124","_spec":"spritejs@^2.16.1","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.18.0"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^13.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.16.1"};
+module.exports = {"_from":"spritejs@^2.16.2","_id":"spritejs@2.16.2","_inBundle":false,"_integrity":"sha512-sTN47yjdbDMAN+sIe72TmyxwhZEiD9kkZuYPjceZ12n3Y4ujbW764hmc0wyBYKRjwq55AudoYT0v8Zqvjuiofg==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.16.2","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.16.2","saveSpec":null,"fetchSpec":"^2.16.2"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.16.2.tgz","_shasum":"4f09e711d16ae0edd977e054d21960707956d64d","_spec":"spritejs@^2.16.2","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.18.1"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^13.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.16.2"};
 
 /***/ }),
 /* 250 */
@@ -22390,8 +22396,8 @@ function parentNode(node) {
 function nextSibling(node) {
   if (node instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["BaseNode"]) {
     if (node.parent) {
-      const idx = node.parent.children.indexOf(node);
-      return node.parent.children[idx + 1];
+      const idx = node.parent.childNodes.indexOf(node);
+      return node.parent.childNodes[idx + 1];
     }
     return null;
   }
