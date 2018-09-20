@@ -22265,50 +22265,59 @@ function createElementNS(namespace, tagName) {
   return document.createElementNS(web_util_index__WEBPACK_IMPORTED_MODULE_0__["namespaceMap"][namespace], tagName);
 }
 
+// wrapping dom node to  sprite node
+function wrapNode(node) {
+  node.dataset = {};
+  node.connect = (parent, zOrder) => {
+    node.parent = parent;
+    node.zOrder = zOrder;
+  };
+  node.disconnect = parent => {
+    delete node.parent;
+    delete node.zOrder;
+  };
+  node.dispatchEvent = () => false;
+  node.forceUpdate = () => false;
+  node.isVisible = () => false;
+  node.__data = new spritejs__WEBPACK_IMPORTED_MODULE_1__["DataNode"]();
+  node.contains = () => false;
+  node.enter = () => node;
+  node.exit = () => node;
+  node.attr = (...args) => {
+    return node.__data.attr(...args);
+  };
+  return node;
+}
+
 function createTextNode(text) {
-  return document.createTextNode(text);
+  const textNode = document.createTextNode(text);
+  return wrapNode(textNode);
 }
 
 function createComment(text) {
   const comment = document.createComment(text);
-  comment.dataset = {};
-  comment.connect = (parent, zOrder) => {
-    comment.parent = parent;
-    comment.zOrder = zOrder;
-  };
-  comment.disconnect = parent => {
-    delete comment.parent;
-    delete comment.zOrder;
-  };
-  comment.dispatchEvent = () => false;
-  comment.forceUpdate = () => false;
-  comment.isVisible = () => false;
-  comment.__data = new spritejs__WEBPACK_IMPORTED_MODULE_1__["DataNode"]({ display: 'none' });
-  comment.contains = () => false;
-  comment.enter = () => comment;
-  comment.exit = () => comment;
-  comment.attr = (...args) => {
-    return comment.__data.attr(...args);
-  };
-  return comment;
+  return wrapNode(comment);
 }
 
 function insertBefore(parentNode, newNode, referenceNode) {
   if (parentNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["BaseNode"]) {
-    if (parentNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["Label"] && newNode.nodeType === document.TEXT_NODE) {
-      parentNode.text = newNode.textContent;
-      Object.defineProperty(child, 'textContent', {
-        set(text) {
-          node.text = text;
-        },
-        get() {
-          return node.text;
-        },
-        configurable: true
-      });
+    if (newNode.nodeType === document.TEXT_NODE) {
+      if (parentNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["Label"]) {
+        parentNode.text = newNode.textContent;
+        Object.defineProperty(child, 'textContent', {
+          set(text) {
+            node.text = text;
+          },
+          get() {
+            return node.text;
+          },
+          configurable: true
+        });
+      } else if (parentNode.appendChild) {
+        parentNode.appendChild(newNode);
+      }
       // parentNode.childNodes = [newNode]
-    }
-    if (newNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["BaseNode"] || newNode.nodeType === document.COMMENT_NODE || parentNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["Scene"]) {
+    } else if (newNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["BaseNode"] || newNode.nodeType === document.COMMENT_NODE || parentNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["Scene"]) {
       parentNode.insertBefore(newNode, referenceNode);
     }
   } else {
@@ -22334,21 +22343,24 @@ function appendChild(node, child) {
       child.updateViewport();
     });
   } else if (node instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["BaseNode"]) {
-    if (node instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["Label"] && child.nodeType === document.TEXT_NODE) {
-      node.text = child.textContent;
-      Object.defineProperty(child, 'textContent', {
-        set(text) {
-          node.text = text;
-        },
-        get() {
-          return node.text;
-        },
-        configurable: true
-      });
-    }
-    if (child instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["BaseNode"] || child.nodeType === document.COMMENT_NODE || node instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["Scene"]) {
+    if (child.nodeType === document.TEXT_NODE) {
+      if (node instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["Label"]) {
+        node.text = child.textContent;
+        Object.defineProperty(child, 'textContent', {
+          set(text) {
+            node.text = text;
+          },
+          get() {
+            return node.text;
+          },
+          configurable: true
+        });
+      } else if (node.appendChild) {
+        node.appendChild(child);
+      }
+    } else if (child instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["BaseNode"] || child.nodeType === document.COMMENT_NODE || node instanceof spritejs__WEBPACK_IMPORTED_MODULE_1__["Scene"]) {
       node.appendChild(child);
-    } else if (child.nodeType !== document.TEXT_NODE) {
+    } else {
       const nodeType = child.tagName.toLowerCase();
       if (nodeType) {
         console.error(`Node#${nodeType} is not a sprite node.`, child);

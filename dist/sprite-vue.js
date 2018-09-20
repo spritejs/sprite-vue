@@ -27713,65 +27713,74 @@ function createElementNS(namespace, tagName) {
   return document.createElementNS(web_util_index__WEBPACK_IMPORTED_MODULE_2__["namespaceMap"][namespace], tagName);
 }
 
+// wrapping dom node to  sprite node
+function wrapNode(node) {
+  node.dataset = {};
+  node.connect = function (parent, zOrder) {
+    node.parent = parent;
+    node.zOrder = zOrder;
+  };
+  node.disconnect = function (parent) {
+    delete node.parent;
+    delete node.zOrder;
+  };
+  node.dispatchEvent = function () {
+    return false;
+  };
+  node.forceUpdate = function () {
+    return false;
+  };
+  node.isVisible = function () {
+    return false;
+  };
+  node.__data = new spritejs__WEBPACK_IMPORTED_MODULE_3__["DataNode"]();
+  node.contains = function () {
+    return false;
+  };
+  node.enter = function () {
+    return node;
+  };
+  node.exit = function () {
+    return node;
+  };
+  node.attr = function () {
+    var _node$__data;
+
+    return (_node$__data = node.__data).attr.apply(_node$__data, arguments);
+  };
+  return node;
+}
+
 function createTextNode(text) {
-  return document.createTextNode(text);
+  var textNode = document.createTextNode(text);
+  return wrapNode(textNode);
 }
 
 function createComment(text) {
   var comment = document.createComment(text);
-  comment.dataset = {};
-  comment.connect = function (parent, zOrder) {
-    comment.parent = parent;
-    comment.zOrder = zOrder;
-  };
-  comment.disconnect = function (parent) {
-    delete comment.parent;
-    delete comment.zOrder;
-  };
-  comment.dispatchEvent = function () {
-    return false;
-  };
-  comment.forceUpdate = function () {
-    return false;
-  };
-  comment.isVisible = function () {
-    return false;
-  };
-  comment.__data = new spritejs__WEBPACK_IMPORTED_MODULE_3__["DataNode"]({ display: 'none' });
-  comment.contains = function () {
-    return false;
-  };
-  comment.enter = function () {
-    return comment;
-  };
-  comment.exit = function () {
-    return comment;
-  };
-  comment.attr = function () {
-    var _comment$__data;
-
-    return (_comment$__data = comment.__data).attr.apply(_comment$__data, arguments);
-  };
-  return comment;
+  return wrapNode(comment);
 }
 
 function insertBefore(parentNode, newNode, referenceNode) {
   if (parentNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["BaseNode"]) {
-    if (parentNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["Label"] && newNode.nodeType === document.TEXT_NODE) {
-      parentNode.text = newNode.textContent;
-      Object.defineProperty(child, 'textContent', {
-        set: function set(text) {
-          node.text = text;
-        },
-        get: function get() {
-          return node.text;
-        },
+    if (newNode.nodeType === document.TEXT_NODE) {
+      if (parentNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["Label"]) {
+        parentNode.text = newNode.textContent;
+        Object.defineProperty(child, 'textContent', {
+          set: function set(text) {
+            node.text = text;
+          },
+          get: function get() {
+            return node.text;
+          },
 
-        configurable: true
-      });
+          configurable: true
+        });
+      } else if (parentNode.appendChild) {
+        parentNode.appendChild(newNode);
+      }
       // parentNode.childNodes = [newNode]
-    }
-    if (newNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["BaseNode"] || newNode.nodeType === document.COMMENT_NODE || parentNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["Scene"]) {
+    } else if (newNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["BaseNode"] || newNode.nodeType === document.COMMENT_NODE || parentNode instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["Scene"]) {
       parentNode.insertBefore(newNode, referenceNode);
     }
   } else {
@@ -27797,22 +27806,25 @@ function appendChild(node, child) {
       child.updateViewport();
     });
   } else if (node instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["BaseNode"]) {
-    if (node instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["Label"] && child.nodeType === document.TEXT_NODE) {
-      node.text = child.textContent;
-      Object.defineProperty(child, 'textContent', {
-        set: function set(text) {
-          node.text = text;
-        },
-        get: function get() {
-          return node.text;
-        },
+    if (child.nodeType === document.TEXT_NODE) {
+      if (node instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["Label"]) {
+        node.text = child.textContent;
+        Object.defineProperty(child, 'textContent', {
+          set: function set(text) {
+            node.text = text;
+          },
+          get: function get() {
+            return node.text;
+          },
 
-        configurable: true
-      });
-    }
-    if (child instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["BaseNode"] || child.nodeType === document.COMMENT_NODE || node instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["Scene"]) {
+          configurable: true
+        });
+      } else if (node.appendChild) {
+        node.appendChild(child);
+      }
+    } else if (child instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["BaseNode"] || child.nodeType === document.COMMENT_NODE || node instanceof spritejs__WEBPACK_IMPORTED_MODULE_3__["Scene"]) {
       node.appendChild(child);
-    } else if (child.nodeType !== document.TEXT_NODE) {
+    } else {
       var nodeType = child.tagName.toLowerCase();
       if (nodeType) {
         console.error('Node#' + nodeType + ' is not a sprite node.', child);

@@ -51,7 +51,14 @@ Vue.component('my-scene', {
     }
   },
   mounted() {
-    console.log(this.$refs)
+    this.$refs.block.animate([
+      {rotate: 360},
+    ], {
+      duration: 5000,
+    })
+    setTimeout(() => {
+      this.items.push({ id: 'stop-btn', bgcolor: 'red', state: 'deactive' })
+    }, 2000)
   },
   methods: {
     enter (index) {
@@ -72,8 +79,11 @@ Vue.component('my-scene', {
   template: `
     <scene id="container" :viewport=viewport>
       <layer id="fglayer">
-        <group width="500" display="flex" y="100" justifyContent="space-between" bgcolor="grey">
-          <sprite v-if="index < 2" v-for="(item, index) in items" :size="[50, 50]"
+        <sprite ref="block" bgcolor="red" :size="[50, 50]" :pos="[100, 400]" zIndex="10"></sprite>
+        <group width="500" y="100" justifyContent="space-between" bgcolor="grey">
+          <sprite v-for="(item, index) in items" :size="[50, 50]"
+            :x="50*index"
+            :y="20*index"
             :key="'sp'+index"
             ref="sp"
             :bgcolor="item.bgcolor"
@@ -81,7 +91,7 @@ Vue.component('my-scene', {
             v-on:mouseleave="leave(index)"
             v-on:click="tap(index, $event)"
             :states="states" :actions="actions" :state="item.state"
-            v-on:state-to-active="changed"></sprite>
+            v-on:action-finished="changed"></sprite>
         </group>
       </layer>
     </scene>

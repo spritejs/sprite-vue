@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Example</title>
+  <script src="/js/sprite-vue.js"></script>
+  <!-- <script src="/js/sprite-vue-debug.js"></script> -->
+  <style>
+  #container {
+    width: 600px;
+    height: 600px;
+    position: relative;
+  }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    const Vue = spritevue.Vue;
+
+    Vue.component('my-demo', {
+      props: ['option'],
+      data() {
+        return {
+          gridY: [
+            {bgcolor: 'black', size: [300, 10], y: 10},
+            {bgcolor: 'black', size: [300, 10], y: 50},
+            {bgcolor: 'black', size: [300, 10], y: 90},
+            {bgcolor: 'black', size: [300, 10], y: 130},
+            {bgcolor: 'black', size: [300, 10], y: 170},
+          ]
+        };
+      },
+      computed: {
+        bgSprites() {
+          const resArr = this.option.data.reduce((res, item, ind) => {
+            // 背景sprite处理
+            if (ind % 2 === 1) {
+              res.push({ x: `${ind * 20}px`, height: '80px', width: '20px', bgcolor: 'blue', y:80});
+            }
+            return res;
+          }, []);
+          console.log(resArr, resArr.length);
+          return resArr;
+        },
+      },
+      template: `
+        <group>
+          <sprite v-for="(item,key) in gridY" :attrs="item" :key="key"></sprite>
+          <sprite v-for="(sprite,key) in bgSprites" :attrs="sprite"></sprite>
+          <sprite></sprite>
+        </group>
+      `
+    });
+
+    const app = new Vue({
+      el: '#app',
+      data() {
+        return {
+          option: {
+            data: [1, 2, 3, 4, 5, 6],
+          }
+        };
+      },
+      methods: {
+        addData() {
+          const num = this.option.data.length;
+          this.option.data.push(num);// 间隔一个，加一个sprite
+          this.option.data.push(num + 1);
+        },
+      },
+      template: `
+      <scene id="vessel"  :resolution="[1200, 1200]" :viewport="[600, 600]">
+        <layer id="fglayer">
+          <sprite :size="[44,44]" bgcolor="#f00" :pos="[10,10]" @click="addData"></sprite>
+          <my-demo :option="option"/>
+        </layer>
+      </scene>
+      `
+    });
+  </script>
+</body>
+</html>

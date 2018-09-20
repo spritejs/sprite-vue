@@ -58,50 +58,59 @@ export function createElementNS (namespace: string, tagName: string): Element {
   return document.createElementNS(namespaceMap[namespace], tagName)
 }
 
+// wrapping dom node to  sprite node
+function wrapNode (node) {
+  node.dataset = {}
+  node.connect = (parent, zOrder) => {
+    node.parent = parent
+    node.zOrder = zOrder
+  }
+  node.disconnect = (parent) => {
+    delete node.parent
+    delete node.zOrder
+  }
+  node.dispatchEvent = () => false
+  node.forceUpdate = () => false
+  node.isVisible = () => false
+  node.__data = new DataNode()
+  node.contains = () => false
+  node.enter = () => node
+  node.exit = () => node
+  node.attr = (...args) => {
+    return node.__data.attr(...args)
+  }
+  return node
+}
+
 export function createTextNode (text: string): Text {
-  return document.createTextNode(text)
+  const textNode = document.createTextNode(text)
+  return wrapNode(textNode)
 }
 
 export function createComment (text: string): Comment {
   const comment = document.createComment(text)
-  comment.dataset = {}
-  comment.connect = (parent, zOrder) => {
-    comment.parent = parent
-    comment.zOrder = zOrder
-  }
-  comment.disconnect = (parent) => {
-    delete comment.parent
-    delete comment.zOrder
-  }
-  comment.dispatchEvent = () => false
-  comment.forceUpdate = () => false
-  comment.isVisible = () => false
-  comment.__data = new DataNode({ display: 'none' })
-  comment.contains = () => false
-  comment.enter = () => comment
-  comment.exit = () => comment
-  comment.attr = (...args) => {
-    return comment.__data.attr(...args)
-  }
-  return comment
+  return wrapNode(comment)
 }
 
 export function insertBefore (parentNode: Node, newNode: Node, referenceNode: Node) {
   if (parentNode instanceof BaseNode) {
-    if (parentNode instanceof Label && newNode.nodeType === document.TEXT_NODE) {
-      parentNode.text = newNode.textContent
-      Object.defineProperty(child, 'textContent', {
-        set (text) {
-          node.text = text
-        },
-        get () {
-          return node.text
-        },
-        configurable: true
-      })
+    if (newNode.nodeType === document.TEXT_NODE) {
+      if (parentNode instanceof Label) {
+        parentNode.text = newNode.textContent
+        Object.defineProperty(child, 'textContent', {
+          set (text) {
+            node.text = text
+          },
+          get () {
+            return node.text
+          },
+          configurable: true
+        })
+      } else if (parentNode.appendChild) {
+        parentNode.appendChild(newNode)
+      }
       // parentNode.childNodes = [newNode]
-    }
-    if (newNode instanceof BaseNode || newNode.nodeType === document.COMMENT_NODE || parentNode instanceof Scene) {
+    } else if (newNode instanceof BaseNode || newNode.nodeType === document.COMMENT_NODE || parentNode instanceof Scene) {
       parentNode.insertBefore(newNode, referenceNode)
     }
   } else {
@@ -127,21 +136,24 @@ export function appendChild (node: Node, child: Node) {
       child.updateViewport()
     })
   } else if (node instanceof BaseNode) {
-    if (node instanceof Label && child.nodeType === document.TEXT_NODE) {
-      node.text = child.textContent
-      Object.defineProperty(child, 'textContent', {
-        set (text) {
-          node.text = text
-        },
-        get () {
-          return node.text
-        },
-        configurable: true
-      })
-    }
-    if (child instanceof BaseNode || child.nodeType === document.COMMENT_NODE || node instanceof Scene) {
+    if (child.nodeType === document.TEXT_NODE) {
+      if (node instanceof Label) {
+        node.text = child.textContent
+        Object.defineProperty(child, 'textContent', {
+          set (text) {
+            node.text = text
+          },
+          get () {
+            return node.text
+          },
+          configurable: true
+        })
+      } else if (node.appendChild) {
+        node.appendChild(child)
+      }
+    } else if (child instanceof BaseNode || child.nodeType === document.COMMENT_NODE || node instanceof Scene) {
       node.appendChild(child)
-    } else if (child.nodeType !== document.TEXT_NODE) {
+    } else {
       const nodeType = child.tagName.toLowerCase()
       if (nodeType) {
         console.error(`Node#${nodeType} is not a sprite node.`, child)
