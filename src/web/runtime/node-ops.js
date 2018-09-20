@@ -73,6 +73,13 @@ function wrapNode (node) {
   node.forceUpdate = () => false
   node.isVisible = () => false
   node.__data = new DataNode()
+  // reflect to get _attr Symbol
+  Object.getOwnPropertySymbols(node.__data).some((symbol) => {
+    if (symbol.toString() === 'Symbol(attr)') {
+      node[symbol] = node.__data[symbol]
+      return true
+    }
+  })
   node.contains = () => false
   node.enter = () => node
   node.exit = () => node
