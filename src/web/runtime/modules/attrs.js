@@ -1,5 +1,5 @@
 /* @flow */
-
+import { BaseNode } from 'spritejs'
 import { isIE, isIE9, isEdge } from 'core/util/env'
 
 import {
@@ -88,7 +88,7 @@ function setAttr (el: Element, key: string, value: any) {
 }
 
 function baseSetAttr (el, key, value) {
-  if (isFalsyAttrValue(value)) {
+  if (!(el instanceof BaseNode) && isFalsyAttrValue(value)) {
     el.removeAttribute(key)
   } else {
     // #7138: IE10 & 11 fires input event when setting placeholder on
