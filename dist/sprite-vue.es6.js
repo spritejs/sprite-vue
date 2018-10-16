@@ -11117,7 +11117,8 @@ function parseValuesString(str, parser) {
   if (typeof str === 'string') {
     const values = str.split(/[\s,]+/g);
     return values.map(v => {
-      return parser ? parser(v) : v;
+      const ret = parser ? parser(v) : v;
+      return Number.isNaN(ret) ? v : ret;
     });
   }
   return str;
@@ -11871,7 +11872,7 @@ function relative(type = 'width') {
       descriptor.set = function (val) {
         if (typeof val === 'string') {
           val = val.trim();
-          if (val.endsWith('%')) {
+          if (val.slice(-1) === '%') {
             let parent = this.subject.parent;
             let pv = null;
             if (parent) {
@@ -11896,7 +11897,7 @@ function relative(type = 'width') {
               v: parseFloat(val) / 100,
               rv: val
             };
-          } else if (val.endsWith('rw')) {
+          } else if (val.slice(-2) === 'rw') {
             const layer = this.subject.layer;
             let pv = null;
             if (layer) {
@@ -11908,7 +11909,7 @@ function relative(type = 'width') {
               v: parseFloat(val) / 100,
               rv: val
             };
-          } else if (val.endsWith('rh')) {
+          } else if (val.slice(-2) === 'rh') {
             const layer = this.subject.layer;
             let pv = null;
             if (layer) {
@@ -14633,7 +14634,7 @@ let BaseNode = class BaseNode {
             layer.touchedTargets[touch.identifier].push(this);
           }
         }
-        if (type.startsWith('touch')) {
+        if (/^touch/.test(type)) {
           const touches = Array.from(evt.originalEvent.touches),
                 layer = this.layer;
           evt.targetTouches = [];
@@ -15134,9 +15135,9 @@ const elementProto = {
       // querySelector('nodeType')
       // querySelector('#id')
       // querySelector(':name')
-      if (selector.startsWith('#')) {
+      if (selector.charAt(0) === '#') {
         ret = this.getElementById(selector.slice(1));
-      } else if (selector.startsWith(':')) {
+      } else if (selector.charAt(0) === ':') {
         const name = selector.slice(1);
         const nodeList = querySelectorLimits(this, c => c.name === name, 1);
         if (nodeList.length) ret = nodeList[0];
@@ -15169,11 +15170,11 @@ const elementProto = {
     if (!selector || selector === '*') {
       ret = getAllSubNodes(this);
     } else if (typeof selector === 'string') {
-      if (selector.startsWith('#')) {
+      if (selector.charAt(0) === '#') {
         const sprite = this.getElementById(selector.slice(1));
         ret = sprite ? [sprite] : [];
       }
-      if (selector.startsWith(':')) {
+      if (selector.charAt(0) === ':') {
         ret = this.getElementsByName(selector.slice(1));
       }
       const nodeType = getNodeType(selector);
@@ -17460,7 +17461,7 @@ let Layer = class Layer extends _basenode__WEBPACK_IMPORTED_MODULE_2__["default"
               // detect mouseenter/mouseleave
               targetSprites.push(sprite);
             }
-            if (evt.terminated && !type.startsWith('mouse')) {
+            if (evt.terminated && type !== 'mousemove') {
               break;
             }
           }
@@ -17855,9 +17856,8 @@ let Group = (_class3 = (_temp2 = _class4 = class Group extends _basesprite__WEBP
 
         let parentX, parentY;
 
-        if (evt.offsetX) parentX = evt.offsetX - this.originalRect[0] - borderWidth - padding[3] + scrollLeft;
-        if (evt.offsetY) parentY = evt.offsetY - this.originalRect[1] - borderWidth - padding[0] + scrollTop;
-        // console.log(evt.parentX, evt.parentY)
+        if ('offsetX' in evt) parentX = evt.offsetX - this.originalRect[0] - borderWidth - padding[3] + scrollLeft;
+        if ('offsetY' in evt) parentY = evt.offsetY - this.originalRect[1] - borderWidth - padding[0] + scrollTop;
 
         const _parentX = evt.parentX,
               _parentY = evt.parentY;
@@ -17879,7 +17879,7 @@ let Group = (_class3 = (_temp2 = _class4 = class Group extends _basesprite__WEBP
             }
             targetSprites.push(sprite);
           }
-          if (evt.terminated && !type.startsWith('mouse')) {
+          if (evt.terminated && type !== 'mousemove') {
             break;
           }
         }
@@ -17951,12 +17951,9 @@ let Group = (_class3 = (_temp2 = _class4 = class Group extends _basesprite__WEBP
 
     if (!this.isVirtual) {
       super.render(t, drawingContext);
-      const [w, h] = this.attrSize;
-      if (w !== '' || h !== '') {
-        drawingContext.beginPath();
-        drawingContext.rect(0, 0, this.contentSize[0], this.contentSize[1]);
-        drawingContext.clip();
-      }
+      drawingContext.beginPath();
+      drawingContext.rect(0, 0, this.contentSize[0], this.contentSize[1]);
+      drawingContext.clip();
     }
 
     drawingContext.save();
@@ -22994,7 +22991,7 @@ let _default = class _default extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["
 /* 255 */
 /***/ (function(module) {
 
-module.exports = {"_from":"spritejs@^2.17.6","_id":"spritejs@2.17.6","_inBundle":false,"_integrity":"sha512-ziWjscOt0NVoSAcjLZ7+emRK17V0JFYGIr8hxyjQeiYMBTCbaWrYb3tDaGpFPDTttF0FniiAPNJ71xxJSClQVg==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.17.6","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.17.6","saveSpec":null,"fetchSpec":"^2.17.6"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.17.6.tgz","_shasum":"ca7e0e61dc22cc2cd7f5efea427bfeb011e19c68","_spec":"spritejs@^2.17.6","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.19.7"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^13.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"engines":{"node":">= 6.0.0","npm":">= 3.0.0"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.17.6"};
+module.exports = {"_from":"spritejs@^2.17.7","_id":"spritejs@2.17.7","_inBundle":false,"_integrity":"sha512-WGFzZgkGqREgTu7GUGvJJdY0uXXKJR0n5Z14A31nUgpvcpTTlUNMe76uisIC9NNeRPB+WHQjzQrtyfhzx1/9Gw==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.17.7","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.17.7","saveSpec":null,"fetchSpec":"^2.17.7"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.17.7.tgz","_shasum":"eb4a217caa919c06c7ee19ad5c5103007b13ec29","_spec":"spritejs@^2.17.7","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.19.8"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.2","d3":"^4.13.0","eslint":"^4.19.1","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^13.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"engines":{"node":">= 6.0.0","npm":">= 3.0.0"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.17.7"};
 
 /***/ }),
 /* 256 */

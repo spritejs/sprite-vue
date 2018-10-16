@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Example</title>
+  <script src="/js/sprite-vue.js"></script>
+  <!-- <script src="/js/sprite-vue-debug.js"></script> -->
+  <style>
+  #container {
+    width: 600px;
+    height: 600px;
+    position: relative;
+  }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+  const Vue = spritevue.Vue
+
+  new Vue({
+    el: '#app',
+    data () {
+      return {
+
+      }
+    },
+    methods: {
+      enter (event) {
+        // event.target.attr('scale', 1.5)
+        event.target.attr('bgcolor', 'blue')
+      },
+      leave(event) {
+        console.log(event.target)
+        // event.target.attr('scale', 1.0)
+        event.target.attr('bgcolor', 'red')
+      }
+    },
+    template: `
+    <scene id="test" :viewport="[300, 300]" displayRatio="auto">
+      <layer>
+        <s-group :pos="[100,100]">
+          <s-sprite @mouseenter="enter($event)" @mouseleave="leave($event)" :size="[30,30]" bgcolor="red" borderRadius="50" anchor="0.5"></s-sprite>
+        </s-group>
+      </layer>
+    </scene>
+    `
+  })
+  </script>
+</body>
+</html>

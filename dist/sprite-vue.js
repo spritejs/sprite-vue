@@ -13015,10 +13015,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "sortOrderedSprites", function() { return sortOrderedSprites; });
 /* harmony import */ var babel_runtime_core_js_set__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(98);
 /* harmony import */ var babel_runtime_core_js_set__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_core_js_set__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var babel_runtime_core_js_number_is_nan__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(265);
-/* harmony import */ var babel_runtime_core_js_number_is_nan__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_core_js_number_is_nan__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(231);
-/* harmony import */ var babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(231);
+/* harmony import */ var babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var babel_runtime_core_js_number_is_nan__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(265);
+/* harmony import */ var babel_runtime_core_js_number_is_nan__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_core_js_number_is_nan__WEBPACK_IMPORTED_MODULE_2__);
 /* harmony import */ var babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(224);
 /* harmony import */ var babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_3__);
 /* harmony import */ var babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(96);
@@ -13117,7 +13117,8 @@ function parseValuesString(str, parser) {
   if (typeof str === 'string') {
     var values = str.split(/[\s,]+/g);
     return values.map(function (v) {
-      return parser ? parser(v) : v;
+      var ret = parser ? parser(v) : v;
+      return babel_runtime_core_js_number_is_nan__WEBPACK_IMPORTED_MODULE_2___default()(ret) ? v : ret;
     });
   }
   return str;
@@ -13152,7 +13153,7 @@ function fourValuesShortCut(val) {
   }if (val.length === 2) {
     return [val[0], val[1], val[0], val[1]];
   }
-  return [].concat(babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_2___default()(val), [0, 0, 0, 0]).slice(0, 4);
+  return [].concat(babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_1___default()(val), [0, 0, 0, 0]).slice(0, 4);
 }
 
 function boxIntersect(box1, box2) {
@@ -13216,7 +13217,7 @@ function appendUnit(value) {
   if (value === '') {
     return value;
   }
-  if (typeof value === 'string' && babel_runtime_core_js_number_is_nan__WEBPACK_IMPORTED_MODULE_1___default()(Number(value))) {
+  if (typeof value === 'string' && babel_runtime_core_js_number_is_nan__WEBPACK_IMPORTED_MODULE_2___default()(Number(value))) {
     return value;
   }
   return value + defaultUnit;
@@ -13934,7 +13935,7 @@ function relative() {
       descriptor.set = function (val) {
         if (typeof val === 'string') {
           val = val.trim();
-          if (val.endsWith('%')) {
+          if (val.slice(-1) === '%') {
             var parent = this.subject.parent;
             var pv = null;
             if (parent) {
@@ -13959,7 +13960,7 @@ function relative() {
               v: parseFloat(val) / 100,
               rv: val
             };
-          } else if (val.endsWith('rw')) {
+          } else if (val.slice(-2) === 'rw') {
             var layer = this.subject.layer;
             var _pv2 = null;
             if (layer) {
@@ -13971,7 +13972,7 @@ function relative() {
               v: parseFloat(val) / 100,
               rv: val
             };
-          } else if (val.endsWith('rh')) {
+          } else if (val.slice(-2) === 'rh') {
             var _layer = this.subject.layer;
             var _pv3 = null;
             if (_layer) {
@@ -17597,7 +17598,7 @@ var BaseNode = function () {
               layer.touchedTargets[touch.identifier].push(this);
             }
           }
-          if (type.startsWith('touch')) {
+          if (/^touch/.test(type)) {
             var touches = babel_runtime_core_js_array_from__WEBPACK_IMPORTED_MODULE_2___default()(evt.originalEvent.touches),
                 _layer = this.layer;
             evt.targetTouches = [];
@@ -18234,9 +18235,9 @@ var elementProto = {
       // querySelector('nodeType')
       // querySelector('#id')
       // querySelector(':name')
-      if (selector.startsWith('#')) {
+      if (selector.charAt(0) === '#') {
         ret = this.getElementById(selector.slice(1));
-      } else if (selector.startsWith(':')) {
+      } else if (selector.charAt(0) === ':') {
         var name = selector.slice(1);
         var nodeList = querySelectorLimits(this, function (c) {
           return c.name === name;
@@ -18279,11 +18280,11 @@ var elementProto = {
     if (!selector || selector === '*') {
       ret = getAllSubNodes(this);
     } else if (typeof selector === 'string') {
-      if (selector.startsWith('#')) {
+      if (selector.charAt(0) === '#') {
         var sprite = this.getElementById(selector.slice(1));
         ret = sprite ? [sprite] : [];
       }
-      if (selector.startsWith(':')) {
+      if (selector.charAt(0) === ':') {
         ret = this.getElementsByName(selector.slice(1));
       }
       var nodeType = getNodeType(selector);
@@ -20926,7 +20927,7 @@ var Layer = function (_BaseNode) {
                 // detect mouseenter/mouseleave
                 targetSprites.push(sprite);
               }
-              if (evt.terminated && !type.startsWith('mouse')) {
+              if (evt.terminated && type !== 'mousemove') {
                 break;
               }
             }
@@ -21471,9 +21472,8 @@ var Group = (_class3 = (_temp2 = _class4 = function (_BaseSprite) {
           var parentX = void 0,
               parentY = void 0;
 
-          if (evt.offsetX) parentX = evt.offsetX - this.originalRect[0] - borderWidth - padding[3] + scrollLeft;
-          if (evt.offsetY) parentY = evt.offsetY - this.originalRect[1] - borderWidth - padding[0] + scrollTop;
-          // console.log(evt.parentX, evt.parentY)
+          if ('offsetX' in evt) parentX = evt.offsetX - this.originalRect[0] - borderWidth - padding[3] + scrollLeft;
+          if ('offsetY' in evt) parentY = evt.offsetY - this.originalRect[1] - borderWidth - padding[0] + scrollTop;
 
           var _parentX = evt.parentX,
               _parentY = evt.parentY;
@@ -21495,7 +21495,7 @@ var Group = (_class3 = (_temp2 = _class4 = function (_BaseSprite) {
               }
               targetSprites.push(sprite);
             }
-            if (evt.terminated && !type.startsWith('mouse')) {
+            if (evt.terminated && type !== 'mousemove') {
               break;
             }
           }
@@ -21570,16 +21570,9 @@ var Group = (_class3 = (_temp2 = _class4 = function (_BaseSprite) {
 
       if (!this.isVirtual) {
         babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_3___default()(Group.prototype.__proto__ || babel_runtime_core_js_object_get_prototype_of__WEBPACK_IMPORTED_MODULE_5___default()(Group.prototype), 'render', this).call(this, t, drawingContext);
-
-        var _attrSize = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_1___default()(this.attrSize, 2),
-            w = _attrSize[0],
-            h = _attrSize[1];
-
-        if (w !== '' || h !== '') {
-          drawingContext.beginPath();
-          drawingContext.rect(0, 0, this.contentSize[0], this.contentSize[1]);
-          drawingContext.clip();
-        }
+        drawingContext.beginPath();
+        drawingContext.rect(0, 0, this.contentSize[0], this.contentSize[1]);
+        drawingContext.clip();
       }
 
       drawingContext.save();
@@ -21619,9 +21612,9 @@ var Group = (_class3 = (_temp2 = _class4 = function (_BaseSprite) {
           bgcolor = this.attr('bgcolor'),
           _attr2 = this.attr('gradients'),
           bgGradient = _attr2.bgcolor,
-          _attrSize2 = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_1___default()(this.attrSize, 2),
-          width = _attrSize2[0],
-          height = _attrSize2[1],
+          _attrSize = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_1___default()(this.attrSize, 2),
+          width = _attrSize[0],
+          height = _attrSize[1],
           _attr3 = this.attr('anchor'),
           _attr4 = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_1___default()(_attr3, 2),
           anchorX = _attr4[0],
@@ -21647,9 +21640,9 @@ var Group = (_class3 = (_temp2 = _class4 = function (_BaseSprite) {
     get: function get() {
       if (this.isVirtual) return [0, 0];
 
-      var _attrSize3 = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_1___default()(this.attrSize, 2),
-          width = _attrSize3[0],
-          height = _attrSize3[1];
+      var _attrSize2 = babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_1___default()(this.attrSize, 2),
+          width = _attrSize2[0],
+          height = _attrSize2[1];
 
       if (width === '' || height === '') {
         if (this.attr('clip')) {
@@ -28624,7 +28617,7 @@ $export($export.S, 'Object', {
 /* 366 */
 /***/ (function(module) {
 
-module.exports = {"_from":"spritejs@^2.17.6","_id":"spritejs@2.17.6","_inBundle":false,"_integrity":"sha512-ziWjscOt0NVoSAcjLZ7+emRK17V0JFYGIr8hxyjQeiYMBTCbaWrYb3tDaGpFPDTttF0FniiAPNJ71xxJSClQVg==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.17.6","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.17.6","saveSpec":null,"fetchSpec":"^2.17.6"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.17.6.tgz","_shasum":"ca7e0e61dc22cc2cd7f5efea427bfeb011e19c68","_spec":"spritejs@^2.17.6","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.19.7"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.1","d3":"^4.13.0","eslint":"^4.17.0","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^13.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"engines":{"node":">= 6.0.0","npm":">= 3.0.0"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.17.6"};
+module.exports = {"_from":"spritejs@^2.17.7","_id":"spritejs@2.17.7","_inBundle":false,"_integrity":"sha512-WGFzZgkGqREgTu7GUGvJJdY0uXXKJR0n5Z14A31nUgpvcpTTlUNMe76uisIC9NNeRPB+WHQjzQrtyfhzx1/9Gw==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.17.7","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.17.7","saveSpec":null,"fetchSpec":"^2.17.7"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.17.7.tgz","_shasum":"eb4a217caa919c06c7ee19ad5c5103007b13ec29","_spec":"spritejs@^2.17.7","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.19.8"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.2","d3":"^4.13.0","eslint":"^4.19.1","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^13.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"engines":{"node":">= 6.0.0","npm":">= 3.0.0"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.17.7"};
 
 /***/ }),
 /* 367 */
