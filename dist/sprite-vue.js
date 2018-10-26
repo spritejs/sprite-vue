@@ -13226,7 +13226,7 @@ function appendUnit(value) {
 function sortOrderedSprites(sprites) {
   var reversed = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
-  return sprites.sort(function (a, b) {
+  return [].concat(babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_1___default()(sprites)).sort(function (a, b) {
     if (reversed) {
       ;
       var _ref3 = [b, a];
@@ -17057,12 +17057,7 @@ var SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["deprecate"
       this.set('zIndex', val);
       var subject = this.subject;
       if (subject.parent) {
-        subject.parent.childNodes.sort(function (a, b) {
-          if (a.zIndex === b.zIndex) {
-            return a.zOrder - b.zOrder;
-          }
-          return a.zIndex - b.zIndex;
-        });
+        subject.parent.sortedChildNodes = Object(_utils__WEBPACK_IMPORTED_MODULE_16__["sortOrderedSprites"])(subject.parent.childNodes);
       }
     }
 
@@ -20649,8 +20644,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-var _children = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_10___default()('children'),
-    _updateSet = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_10___default()('updateSet'),
+var _updateSet = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_10___default()('updateSet'),
     _zOrder = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_10___default()('zOrder'),
     _tRecord = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_10___default()('tRecord'),
     _timeline = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_10___default()('timeline'),
@@ -20688,7 +20682,8 @@ var Layer = function (_BaseNode) {
 
     _this.outputContext = context;
 
-    _this[_children] = [];
+    _this.childNodes = [];
+    _this.sortedChildNodes = [];
     _this[_updateSet] = new babel_runtime_core_js_set__WEBPACK_IMPORTED_MODULE_3___default.a();
     _this[_zOrder] = 0;
     _this[_tRecord] = []; // calculate FPS
@@ -20704,8 +20699,8 @@ var Layer = function (_BaseNode) {
     if (context.canvas && context.canvas.addEventListener) {
       context.canvas.addEventListener('DOMNodeRemovedFromDocument', function () {
         _this._savePlaybackRate = _this.timeline.playbackRate;
-        _this._saveChildren = [].concat(babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_2___default()(_this[_children]));
-        _this.remove.apply(_this, babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_2___default()(_this[_children]));
+        _this._saveChildren = [].concat(babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_2___default()(_this.childNodes));
+        _this.remove.apply(_this, babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_2___default()(_this.childNodes));
         _this.timeline.playbackRate = 0;
       });
       context.canvas.addEventListener('DOMNodeInsertedIntoDocument', function () {
@@ -20853,7 +20848,7 @@ var Layer = function (_BaseNode) {
     value: function renderRepaintAll(t) {
       var clearContext = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
 
-      var renderEls = this[_children];
+      var renderEls = this.sortedChildNodes;
       var outputContext = this.outputContext;
       if (clearContext) this.clearContext(outputContext);
       this.drawSprites(renderEls, t);
@@ -20872,7 +20867,7 @@ var Layer = function (_BaseNode) {
 
       var outputContext = this.outputContext;
 
-      var renderEls = this[_children];
+      var renderEls = this.sortedChildNodes;
 
       outputContext.save();
       if (this.beforeDrawTransform) {
@@ -20921,7 +20916,7 @@ var Layer = function (_BaseNode) {
           isCollision = true;
         }
         if (isCollision || type === 'mouseleave') {
-          var sprites = this[_children].slice(0).reverse(),
+          var sprites = this.sortedChildNodes.slice(0).reverse(),
               targetSprites = [];
 
           if (changedTouches && type === 'touchend') {
@@ -21060,14 +21055,9 @@ var Layer = function (_BaseNode) {
   }, {
     key: 'children',
     get: function get() {
-      return this[_children].filter(function (child) {
+      return this.childNodes.filter(function (child) {
         return child instanceof _basenode__WEBPACK_IMPORTED_MODULE_13__["default"] && !(child instanceof _datanode__WEBPACK_IMPORTED_MODULE_14__["default"]);
       });
-    }
-  }, {
-    key: 'childNodes',
-    get: function get() {
-      return this[_children];
     }
   }, {
     key: 'timeline',
@@ -21305,8 +21295,7 @@ var _applyDecoratedDescriptor = __webpack_require__(286);
 
 
 
-var _children = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_10___default()('children'),
-    _zOrder = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_10___default()('zOrder'),
+var _zOrder = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_10___default()('zOrder'),
     _layoutTag = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_10___default()('layoutTag');
 
 var GroupAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_11__["relative"])('width'), _dec2 = Object(_utils__WEBPACK_IMPORTED_MODULE_11__["relative"])('height'), _dec3 = Object(_utils__WEBPACK_IMPORTED_MODULE_11__["relative"])('width'), _dec4 = Object(_utils__WEBPACK_IMPORTED_MODULE_11__["relative"])('height'), _dec5 = Object(_utils__WEBPACK_IMPORTED_MODULE_11__["parseValue"])(parseFloat), _dec6 = Object(_utils__WEBPACK_IMPORTED_MODULE_11__["parseValue"])(parseFloat), (_class = (_temp = _class2 = function (_BaseSprite$Attr) {
@@ -21415,7 +21404,8 @@ var Group = (_class3 = (_temp2 = _class4 = function (_BaseSprite) {
 
     var _this2 = babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_8___default()(this, (Group.__proto__ || babel_runtime_core_js_object_get_prototype_of__WEBPACK_IMPORTED_MODULE_5___default()(Group)).call(this, attr));
 
-    _this2[_children] = [];
+    _this2.childNodes = [];
+    _this2.sortedChildNodes = [];
     _this2[_zOrder] = 0;
     _this2[_layoutTag] = false;
     return _this2;
@@ -21440,7 +21430,7 @@ var Group = (_class3 = (_temp2 = _class4 = function (_BaseSprite) {
     value: function cloneNode(deepCopy) {
       var node = babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_3___default()(Group.prototype.__proto__ || babel_runtime_core_js_object_get_prototype_of__WEBPACK_IMPORTED_MODULE_5___default()(Group.prototype), 'cloneNode', this).call(this);
       if (deepCopy) {
-        var children = this[_children];
+        var children = this.childNodes;
         children.forEach(function (child) {
           var subNode = child.cloneNode(deepCopy);
           node.append(subNode);
@@ -21503,7 +21493,7 @@ var Group = (_class3 = (_temp2 = _class4 = function (_BaseSprite) {
           evt.parentX = parentX;
           evt.parentY = parentY;
 
-          var sprites = this[_children].slice(0).reverse();
+          var sprites = this.sortedChildNodes.slice(0).reverse();
 
           var targetSprites = [];
 
@@ -21544,7 +21534,7 @@ var Group = (_class3 = (_temp2 = _class4 = function (_BaseSprite) {
   }, {
     key: 'relayout',
     value: function relayout() {
-      var items = this[_children].filter(function (child) {
+      var items = this.childNodes.filter(function (child) {
         if (child.hasLayout) {
           child.attr('layoutWidth', null);
           child.attr('layoutHeight', null);
@@ -21602,7 +21592,7 @@ var Group = (_class3 = (_temp2 = _class4 = function (_BaseSprite) {
           scrollTop = this.attr('scrollTop');
 
       drawingContext.translate(-scrollLeft, -scrollTop);
-      var sprites = this[_children];
+      var sprites = this.sortedChildNodes;
 
       for (var i = 0; i < sprites.length; i++) {
         var child = sprites[i],
@@ -21648,14 +21638,9 @@ var Group = (_class3 = (_temp2 = _class4 = function (_BaseSprite) {
   }, {
     key: 'children',
     get: function get() {
-      return this[_children].filter(function (child) {
+      return this.childNodes.filter(function (child) {
         return child instanceof _basenode__WEBPACK_IMPORTED_MODULE_15__["default"] && !(child instanceof _datanode__WEBPACK_IMPORTED_MODULE_16__["default"]);
       });
-    }
-  }, {
-    key: 'childNodes',
-    get: function get() {
-      return this[_children];
     }
   }, {
     key: 'contentSize',
@@ -21678,7 +21663,7 @@ var Group = (_class3 = (_temp2 = _class4 = function (_BaseSprite) {
 
           right = 0;
           bottom = 0;
-          this[_children].forEach(function (sprite) {
+          this.childNodes.forEach(function (sprite) {
             if (sprite.attr('display') !== 'none') {
               var renderBox = sprite.renderBox;
               if (renderBox) {
@@ -23472,17 +23457,17 @@ var _removeTask = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_0___defa
 
       _this[_zOrder] = _this[_zOrder] || 0;
       sprite.connect(_this, _this[_zOrder]++);
-      Object(_utils__WEBPACK_IMPORTED_MODULE_1__["sortOrderedSprites"])(_this.childNodes);
+      _this.sortedChildNodes = Object(_utils__WEBPACK_IMPORTED_MODULE_1__["sortOrderedSprites"])(_this.childNodes);
 
-      for (var i = children.length - 1; i > 0; i--) {
-        var a = children[i],
-            b = children[i - 1];
+      // for(let i = children.length - 1; i > 0; i--) {
+      //   const a = children[i],
+      //     b = children[i - 1];
 
-        if (a.zIndex < b.zIndex) {
-          children[i] = b;
-          children[i - 1] = a;
-        }
-      }
+      //   if(a.zIndex < b.zIndex) {
+      //     children[i] = b;
+      //     children[i - 1] = a;
+      //   }
+      // }
 
       if (update) {
         sprite.forceUpdate();
@@ -23534,6 +23519,7 @@ var _removeTask = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_0___defa
         return null;
       }
       that.childNodes.splice(idx, 1);
+      that.sortedChildNodes = Object(_utils__WEBPACK_IMPORTED_MODULE_1__["sortOrderedSprites"])(that.childNodes);
       if (sprite.isVisible() || sprite.lastRenderBox) {
         sprite.forceUpdate();
       }
@@ -23599,10 +23585,9 @@ var _removeTask = babel_runtime_core_js_symbol__WEBPACK_IMPORTED_MODULE_0___defa
             });
           }
         }
-
-        _this5.childNodes.push(newchild);
+        _this5.childNodes.splice(idx, 0, newchild);
         newchild.connect(_this5, refZOrder);
-        Object(_utils__WEBPACK_IMPORTED_MODULE_1__["sortOrderedSprites"])(_this5.childNodes);
+        _this5.sortedChildNodes = Object(_utils__WEBPACK_IMPORTED_MODULE_1__["sortOrderedSprites"])(_this5.childNodes);
         newchild.forceUpdate();
 
         _this5[_zOrder] = _this5[_zOrder] || 0;
@@ -28418,14 +28403,19 @@ var _default = function (_BaseNode) {
   }, {
     key: 'children',
     get: function get() {
-      return this.layers.filter(function (layer) {
+      return this.childNodes.filter(function (layer) {
         return layer.canvas;
       });
     }
   }, {
     key: 'childNodes',
     get: function get() {
-      return this.layers;
+      return babel_runtime_core_js_object_values__WEBPACK_IMPORTED_MODULE_6___default()(this[_layerMap]);
+    }
+  }, {
+    key: 'sortedChildNodes',
+    get: function get() {
+      return this[_layers];
     }
   }, {
     key: 'id',
@@ -28641,7 +28631,7 @@ $export($export.S, 'Object', {
 /* 366 */
 /***/ (function(module) {
 
-module.exports = {"_from":"spritejs@^2.17.10","_id":"spritejs@2.17.10","_inBundle":false,"_integrity":"sha512-+Sw0SqnrxIYrAWw9xwz4kxk4sK506I+GI7gK0PWDgW3KNZC9VEcgOyg2ioXt8KcCIfXwGQqUqXwWJ2fqAuHpJA==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.17.10","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.17.10","saveSpec":null,"fetchSpec":"^2.17.10"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.17.10.tgz","_shasum":"e3a18356db9c6b6ca4f4791d44c0cb0ba4cdef41","_spec":"spritejs@^2.17.10","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.19.11"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.2","d3":"^4.13.0","eslint":"^4.19.1","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^13.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"engines":{"node":">= 6.0.0","npm":">= 3.0.0"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.17.10"};
+module.exports = {"_from":"spritejs@^2.18.1","_id":"spritejs@2.18.1","_inBundle":false,"_integrity":"sha512-mx4H341q/zGlu+1o2yfvgs+YyDaM8pat9M8L/ge++hclgXh1XlJIWyVQ3Mbo1nuXwH+SJwXm3j4RC/0jg134jg==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.18.1","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.18.1","saveSpec":null,"fetchSpec":"^2.18.1"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.18.1.tgz","_shasum":"77968a75bb2c333a583be9bb82e56f8b19a7eafe","_spec":"spritejs@^2.18.1","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.20.2"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.2","d3":"^4.13.0","eslint":"^4.19.1","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^13.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"engines":{"node":">= 6.0.0","npm":">= 3.0.0"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.18.1"};
 
 /***/ }),
 /* 367 */
