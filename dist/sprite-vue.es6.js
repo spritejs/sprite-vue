@@ -23110,10 +23110,12 @@ function wrapNode(node) {
   node.connect = (parent, zOrder) => {
     node.parent = parent;
     node.zOrder = zOrder;
+    node.zIndex = 0;
   };
   node.disconnect = parent => {
     delete node.parent;
     delete node.zOrder;
+    delete node.zIndex;
   };
   node.dispatchEvent = () => false;
   node.forceUpdate = () => false;

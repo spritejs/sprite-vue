@@ -28752,10 +28752,12 @@ function wrapNode(node) {
   node.connect = function (parent, zOrder) {
     node.parent = parent;
     node.zOrder = zOrder;
+    node.zIndex = 0;
   };
   node.disconnect = function (parent) {
     delete node.parent;
     delete node.zOrder;
+    delete node.zIndex;
   };
   node.dispatchEvent = function () {
     return false;
