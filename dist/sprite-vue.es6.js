@@ -12219,6 +12219,8 @@ const _attr = Symbol('attr'),
       _hide = Symbol('hide'),
       _enter = Symbol('enter');
 
+const CACHE_PRIORITY_THRESHOLDS = 0; // disable cache_priority, for canvas drawing bug...
+
 let BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"])('Instead use sprite.cache = null'), (_class = (_temp = _class2 = class BaseSprite extends _basenode__WEBPACK_IMPORTED_MODULE_4__["default"] {
 
   /**
@@ -12832,7 +12834,7 @@ let BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"]
   }
 
   get cache() {
-    if (this[_cachePriority] >= 6) {
+    if (this[_cachePriority] >= CACHE_PRIORITY_THRESHOLDS) {
       return this.cacheContext;
     }
     if (this.cacheContext) {
@@ -12891,7 +12893,6 @@ let BaseSprite = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"]
   }
 
   dispatchEvent(type, evt, collisionState = false, swallow = false) {
-
     if (collisionState) {
       const offsetXY = this.getOffsetXY(evt);
       if (offsetXY) {
@@ -13773,7 +13774,7 @@ let SpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_2__["deprecate"]
       enterMode: 'normal',
       exitMode: 'normal',
       anchor: [0, 0],
-      enableCache: true,
+      enableCache: false,
       x: 0,
       y: 0,
       opacity: 1,
@@ -15377,7 +15378,8 @@ let TextureAttr = (_class = class TextureAttr extends _basesprite__WEBPACK_IMPOR
   constructor(subject) {
     super(subject);
     this.setDefault({
-      textures: []
+      textures: [],
+      enableCache: true
     });
   }
 
@@ -15547,29 +15549,6 @@ let Sprite = (_class2 = (_temp = _class3 = class Sprite extends _basesprite__WEB
     }
     return false;
   }
-
-  // set cache(context) {
-  //   if(context == null) {
-  //     cacheContextPool.put(...this[_texturesCache].values());
-  //     this[_texturesCache].clear();
-  //     return;
-  //   }
-  //   const key = JSON.stringify(this.textures),
-  //     cacheMap = this[_texturesCache];
-
-  //   if(!cacheMap.has(key)) {
-  //     cacheMap.set(key, context);
-  //   }
-  // }
-
-  // get cache() {
-  //   const key = JSON.stringify(this.textures),
-  //     cacheMap = this[_texturesCache];
-  //   if(cacheMap.has(key)) {
-  //     return cacheMap.get(key);
-  //   }
-  //   return null;
-  // }
 
   get cache() {
     const bg = this.attr('bgcolor') || this.attr('gradients').bgcolor;
@@ -15762,8 +15741,7 @@ let LabelSpriteAttr = (_dec = Object(_utils__WEBPACK_IMPORTED_MODULE_1__["inheri
       lineBreak: '',
       wordBreak: 'normal',
       letterSpacing: 0,
-      textIndent: 0,
-      enableCache: false
+      textIndent: 0
     });
   }
 
@@ -17491,6 +17469,11 @@ let Layer = class Layer extends _basenode__WEBPACK_IMPORTED_MODULE_2__["default"
       // bubbling
       collisionState = true;
     }
+    const { layerX, layerY } = evt;
+    if (layerX != null && layerY != null) {
+      evt.offsetX = layerX + this.offset[0];
+      evt.offsetY = layerY + this.offset[1];
+    }
     return super.dispatchEvent(type, evt, collisionState, swallow);
   }
 
@@ -17992,6 +17975,14 @@ let Group = (_class3 = (_temp2 = _class4 = class Group extends _basesprite__WEBP
 
 Object.assign(Group.prototype, _helpers_group__WEBPACK_IMPORTED_MODULE_7__["default"]);
 Group.applyLayout('flex', _layout__WEBPACK_IMPORTED_MODULE_6__["flexLayout"]);
+
+Group.setAttributeEffects({
+  clip(clip1, clip2, p, start, end) {
+    clip1 = Object(_helpers_path__WEBPACK_IMPORTED_MODULE_3__["createSvgPath"])(clip1);
+    clip2 = Object(_helpers_path__WEBPACK_IMPORTED_MODULE_3__["createSvgPath"])(clip2);
+    return Object(_helpers_path__WEBPACK_IMPORTED_MODULE_3__["pathEffect"])(clip1.d, clip2.d, p, start, end);
+  }
+});
 
 Object(_nodetype__WEBPACK_IMPORTED_MODULE_2__["registerNodeType"])('group', Group, true);
 
@@ -22814,10 +22805,10 @@ let _default = class _default extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["
           } else if (x != null && y != null) {
             [originalX, originalY] = layer.toGlobalPos(x, y);
           }
-          Object.assign(evtArgs, {
+
+          layer.dispatchEvent(type, Object.assign({}, evtArgs, {
             layerX: x, layerY: y, originalX, originalY, x, y
-          });
-          layer.dispatchEvent(type, evtArgs);
+          }));
         }
       }
     }, { passive });
@@ -23001,7 +22992,7 @@ let _default = class _default extends sprite_core__WEBPACK_IMPORTED_MODULE_0__["
 /* 255 */
 /***/ (function(module) {
 
-module.exports = {"_from":"spritejs@^2.18.1","_id":"spritejs@2.18.1","_inBundle":false,"_integrity":"sha512-mx4H341q/zGlu+1o2yfvgs+YyDaM8pat9M8L/ge++hclgXh1XlJIWyVQ3Mbo1nuXwH+SJwXm3j4RC/0jg134jg==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.18.1","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.18.1","saveSpec":null,"fetchSpec":"^2.18.1"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.18.1.tgz","_shasum":"77968a75bb2c333a583be9bb82e56f8b19a7eafe","_spec":"spritejs@^2.18.1","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.20.2"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.2","d3":"^4.13.0","eslint":"^4.19.1","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^13.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"engines":{"node":">= 6.0.0","npm":">= 3.0.0"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.18.1"};
+module.exports = {"_from":"spritejs@^2.19.0","_id":"spritejs@2.19.0","_inBundle":false,"_integrity":"sha512-m2jVGTFHyJzLgdlmHdDme3Q6bNbRzKl/kPDi9SXufvnmF1O7RagGayVV2kpJbYBQft2mIK9Cf7AHZOvcPNA9Bg==","_location":"/spritejs","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"spritejs@^2.19.0","name":"spritejs","escapedName":"spritejs","rawSpec":"^2.19.0","saveSpec":null,"fetchSpec":"^2.19.0"},"_requiredBy":["#USER","/"],"_resolved":"https://registry.npmjs.org/spritejs/-/spritejs-2.19.0.tgz","_shasum":"722276130d13b023b381a2233fc054054619ae93","_spec":"spritejs@^2.19.0","_where":"/Users/akirawu/Workspace/spritejs/sprite-vue","author":{"name":"akira-cn"},"ava":{"require":["babel-register"],"babel":"inherit"},"browser":{"./src/platform":"./src/platform/browser","./lib/platform":"./lib/platform/browser"},"bugs":{"url":"https://github.com/spritejs/spritejs/issues"},"bundleDependencies":false,"dependencies":{"axios":"^0.16.2","babel-decorators-runtime":"^0.2.0","babel-runtime":"^6.26.0","sprite-core":"^2.21.0"},"deprecated":false,"description":"A lightweight 2D canvas rendering engine for modern browsers with ES6+.","devDependencies":{"ava":"^0.25.0","babel-cli":"^6.26.0","babel-core":"^6.24.0","babel-eslint":"^8.1.1","babel-loader":"^7.1.5","babel-plugin-inline-package-json":"^2.0.0","babel-plugin-transform-class-properties":"^6.24.1","babel-plugin-transform-decorators-runtime":"^0.4.0","babel-plugin-transform-runtime":"^6.23.0","babel-preset-env":"^1.3.2","babel-preset-minify":"^0.4.3","colors":"^1.2.1","coveralls":"^3.0.2","d3":"^4.13.0","eslint":"^4.19.1","eslint-config-sprite":"^1.0.4","eslint-plugin-html":"^4.0.5","gifencoder":"^1.1.0","hamming-distance":"^1.0.0","imghash":"0.0.3","nyc":"^13.1.0","pixelmatch":"^4.0.2","webpack":"^4.16.2","webpack-cli":"^3.1.0","webpack-dev-server":"^3.1.5"},"directories":{"example":"example"},"engines":{"node":">= 6.0.0","npm":">= 3.0.0"},"homepage":"https://github.com/spritejs/spritejs#readme","keywords":["sprite","canvas","graphic","graphics","SVG","Path","d3","node-canvas","parser","HTML5","object model"],"license":"MIT","main":"lib/index.js","module":"src/spritejs.esm.js","name":"spritejs","nyc":{"include":["src/**/*.js"],"exclude":["src/animation.js","src/cross-platform/**/*.js"]},"repository":{"type":"git","url":"git+https://github.com/spritejs/spritejs.git"},"scripts":{"benchmark":"webpack-dev-server --watch-poll --env.server=benchmark","build":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build.js","build-doc":"babel docs/src -d docs/js && ./script/build-doc.js","compile":"rm -rf lib/* && babel src -d lib --watch","deploy":"rm -rf lib/* && babel src -d lib && rm -rf dist/* && ./script/build-deploy.js","doc":"babel docs/src -d docs/js --watch & webpack-dev-server --watch-poll --env.server=docs","lint":"eslint 'src/**/*.js' --fix","lint-benchmark":"eslint 'benchmark/*.html' --fix","lint-demo":"eslint 'docs/demo/static/code/**/*.js' --fix","lint-doc":"eslint 'docs/src/**/*.js' --fix","lint-example":"eslint 'example/*.html' --fix","lint-test":"eslint 'test/**/*.js' --fix","prepublishOnly":"npm run build-doc && npm run deploy","start":"webpack-dev-server --watch-poll","test":"nyc ava --serial && rm -rf ./coverage && mkdir ./coverage && nyc report --reporter=text-lcov > ./coverage/lcov.info"},"version":"2.19.0"};
 
 /***/ }),
 /* 256 */
