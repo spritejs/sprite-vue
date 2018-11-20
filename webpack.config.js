@@ -47,7 +47,7 @@ module.exports = function (env = {}) {
           include: [
             resolve('src'), 
             resolve('node_modules/vue/src'),
-            resolve('node_modules/spritejs'),
+            // resolve('node_modules/spritejs'),
             /node_modules\/(sprite-[\w-]+\/|svg-path-to-canvas|fast-animation-frame).*/
           ],
           use: {
