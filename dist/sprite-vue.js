@@ -9839,7 +9839,7 @@ function Paper2D() {
   return new (Function.prototype.bind.apply(_scene2.default, [null].concat(args)))();
 }
 
-var version = '2.22.7';
+var version = '2.22.8';
 
 exports._debugger = _platform._debugger;
 exports.version = version;
@@ -21086,7 +21086,7 @@ exports.default = {
           el.dispatchEvent('transitionend', {}, true, true);
         });
       }
-      el.dispatchEvent('stylechange', { oldSelectors: el[_matchedSelectors], newSelectors: matchedSelectors });
+      el.dispatchEvent('stylechange', { oldSelectors: el[_matchedSelectors], newSelectors: matchedSelectors }, true, true);
       el[_matchedSelectors] = matchedSelectors;
       el.attributes.clearStyle();
       el.attributes.__styleTag = true;
@@ -35697,6 +35697,9 @@ function wrapNode(node) {
     var _node$__data;
 
     return (_node$__data = node.__data).attr.apply(_node$__data, arguments);
+  };
+  node.updateStyles = function () {
+    return false;
   };
   return node;
 }

@@ -100,6 +100,7 @@ function wrapNode (node) {
   node.attr = (...args) => {
     return node.__data.attr(...args)
   }
+  node.updateStyles = () => false
   return node
 }
 
