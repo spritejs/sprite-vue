@@ -5,8 +5,10 @@ import { isValidNodeType, createNode, Scene, Label, BaseNode, DataNode } from 's
 
 export function createElement (tagName: string, vnode: VNode): Element {
   let isSpriteNode = !isReservedTag(tagName) && isValidNodeType(tagName)
+  let hasPrefix = false
   if (tagName.startsWith('s-')) {
     tagName = tagName.slice(2)
+    hasPrefix = true
     isSpriteNode = isValidNodeType(tagName)
   }
   if (isSpriteNode) {
@@ -42,7 +44,16 @@ export function createElement (tagName: string, vnode: VNode): Element {
       }
       return scene
     }
-    return createNode(tagName, attrs)
+    const node = createNode(tagName, attrs)
+    if (hasPrefix) {
+      const _tagName = `S-${node.tagName}`
+      Object.defineProperty(node, 'tagName', {
+        get () {
+          return _tagName
+        }
+      })
+    }
+    return node
   }
   const elm = document.createElement(tagName)
   if (tagName !== 'select') {

@@ -35586,8 +35586,10 @@ __webpack_require__.r(__webpack_exports__);
 
 function createElement(tagName, vnode) {
   var isSpriteNode = !Object(web_util_index__WEBPACK_IMPORTED_MODULE_3__["isReservedTag"])(tagName) && Object(spritejs__WEBPACK_IMPORTED_MODULE_4__["isValidNodeType"])(tagName);
+  var hasPrefix = false;
   if (tagName.startsWith('s-')) {
     tagName = tagName.slice(2);
+    hasPrefix = true;
     isSpriteNode = Object(spritejs__WEBPACK_IMPORTED_MODULE_4__["isValidNodeType"])(tagName);
   }
   if (isSpriteNode) {
@@ -35626,7 +35628,16 @@ function createElement(tagName, vnode) {
       }
       return scene;
     }
-    return Object(spritejs__WEBPACK_IMPORTED_MODULE_4__["createNode"])(tagName, attrs);
+    var _node = Object(spritejs__WEBPACK_IMPORTED_MODULE_4__["createNode"])(tagName, attrs);
+    if (hasPrefix) {
+      var _tagName = 'S-' + _node.tagName;
+      Object.defineProperty(_node, 'tagName', {
+        get: function get() {
+          return _tagName;
+        }
+      });
+    }
+    return _node;
   }
   var elm = document.createElement(tagName);
   if (tagName !== 'select') {
