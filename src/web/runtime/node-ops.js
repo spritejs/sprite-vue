@@ -31,8 +31,9 @@ export function createElement (tagName: string, vnode: VNode): Element {
       const elm = document.createElement('div')
       if (attrs.id) elm.id = attrs.id
       if (!vnode.data.ref) vnode.data.ref = 'scene'
+      if (!('useDocumentCSS' in attrs)) attrs.useDocumentCSS = true
       const scene = createNode(tagName, elm, attrs)
-      elm.scene = scene
+      // elm.scene = scene
       if (attrs.resources) {
         const resources = attrs.resources
         scene.preload(...resources).then(() => {

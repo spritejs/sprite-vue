@@ -12,6 +12,17 @@
     height: 600px;
     position: relative;
   }
+  group > sprite {
+    border-radius: 50px;
+    --sprite-size: 30px, 30px;
+    --sprite-anchor: 0.5;
+  }
+  sprite.blue {
+    background-color: blue;
+  }
+  sprite.red {
+    background-color: red;
+  }
   </style>
 </head>
 <body>
@@ -29,19 +40,19 @@
     methods: {
       enter (event) {
         // event.target.attr('scale', 1.5)
-        event.target.attr('bgcolor', 'blue')
+        event.target.attr('class', 'blue')
       },
       leave(event) {
         console.log(event.target)
         // event.target.attr('scale', 1.0)
-        event.target.attr('bgcolor', 'red')
+        event.target.attr('class', 'red')
       }
     },
     template: `
     <scene id="test" :viewport="[300, 300]" displayRatio="auto">
       <layer>
         <s-group :pos="[100,100]">
-          <s-sprite @mouseenter="enter($event)" @mouseleave="leave($event)" :size="[30,30]" bgcolor="red" borderRadius="50" anchor="0.5"></s-sprite>
+          <s-sprite @mouseenter="enter($event)" @mouseleave="leave($event)" class="red"></s-sprite>
         </s-group>
       </layer>
     </scene>

@@ -9839,7 +9839,7 @@ function Paper2D() {
   return new (Function.prototype.bind.apply(_scene2.default, [null].concat(args)))();
 }
 
-var version = '2.22.6';
+var version = '2.22.7';
 
 exports._debugger = _platform._debugger;
 exports.version = version;
@@ -34738,7 +34738,9 @@ var Scene = function (_BaseNode) {
     _this.maxDisplayRatio = options.maxDisplayRatio || Infinity;
     _this.displayRatio = options.displayRatio || 1.0;
 
-    _this.useDocumentCSS = !!options.useDocumentCSS;
+    if (options.useDocumentCSS) {
+      _spriteCore.stylesheet.fromDocumentCSS();
+    }
 
     // d3-friendly
     _this.namespaceURI = 'http://spritejs.org/scene';
@@ -35095,9 +35097,6 @@ var Scene = function (_BaseNode) {
           if (this.container.style && pos !== 'absolute' && pos !== 'fixed') {
             this.container.style.position = 'relative';
           }
-        }
-        if (this.useDocumentCSS && !('useDocumentCSS' in opts)) {
-          opts.useDocumentCSS = true;
         }
         this.appendLayer(new _layer2.default(id, opts));
       }
@@ -35616,8 +35615,9 @@ function createElement(tagName, vnode) {
       var _elm = document.createElement('div');
       if (attrs.id) _elm.id = attrs.id;
       if (!vnode.data.ref) vnode.data.ref = 'scene';
+      if (!('useDocumentCSS' in attrs)) attrs.useDocumentCSS = true;
       var scene = Object(spritejs__WEBPACK_IMPORTED_MODULE_4__["createNode"])(tagName, _elm, attrs);
-      _elm.scene = scene;
+      // elm.scene = scene
       if (attrs.resources) {
         var resources = attrs.resources;
         scene.preload.apply(scene, babel_runtime_helpers_toConsumableArray__WEBPACK_IMPORTED_MODULE_1___default()(resources)).then(function () {
