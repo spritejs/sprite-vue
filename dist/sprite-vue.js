@@ -9839,7 +9839,7 @@ function Paper2D() {
   return new (Function.prototype.bind.apply(_scene2.default, [null].concat(args)))();
 }
 
-var version = '2.22.9';
+var version = '2.22.11';
 
 exports._debugger = _platform._debugger;
 exports.version = version;
@@ -20895,6 +20895,7 @@ exports.default = {
               reserved = {};
           var border = null;
           var transition = null;
+          var gradient = {};
 
           styleAttrs.forEach(function (_ref5) {
             var _ref6 = (0, _slicedToArray3.default)(_ref5, 2),
@@ -20906,14 +20907,33 @@ exports.default = {
               key = key.replace('--sprite-', '');
               key = toCamel(key);
               if (isStyleMap) value = value[0][0].trim();
-              if (key === 'borderStyle') {
+              if (key === 'gradient') {
+                // --sprite-gradient: bgcolor,color vector(0, 150, 150, 0) 0 #fff,0.5 rgba(33, 33, 77, 0.7),1 rgba(128, 45, 88, 0.5)
+                var _matched = value.match(/(.+?)vector\((.+?)\)(.+)/);
+                if (_matched) {
+                  var properties = _matched[1].trim().split(/\s*,\s*/g),
+                      vector = _matched[2].split(',').map(function (s) {
+                    return Number(s.trim());
+                  }),
+                      colors = _matched[3].trim().split(/\s+/).map(function (s) {
+                    var _s$split = s.split(','),
+                        _s$split2 = (0, _slicedToArray3.default)(_s$split, 2),
+                        offset = _s$split2[0],
+                        color = _s$split2[1];
+
+                    return { offset: Number(offset.trim()), color: color.trim() };
+                  });
+                  properties.forEach(function (prop) {
+                    gradient[prop] = { vector: vector, colors: colors };
+                  });
+                }
+              } else if (key === 'borderStyle') {
                 border = border || { width: 1, color: 'rgba(0,0,0,0)' };
                 border.style = value;
               } else if (key === 'borderWidth') {
                 border = border || { width: 1, color: 'rgba(0,0,0,0)' };
                 border.width = parseFloat(value);
-              }
-              if (key === 'borderColor') {
+              } else if (key === 'borderColor') {
                 border = border || { width: 1, color: 'rgba(0,0,0,0)' };
                 border.color = value;
               } else if (key === 'border') {
@@ -20981,7 +21001,7 @@ exports.default = {
           if (border) {
             (0, _assign2.default)(attrs, { border: border });
           }
-          (0, _assign2.default)(attrs, reserved);
+          (0, _assign2.default)(attrs, reserved, gradient);
           styleRules[selectorText] = styleRules[selectorText] || {};
           if (transition) {
             transition.properties = transition.properties || 'all';
@@ -21101,6 +21121,9 @@ exports.default = {
 
   get relatedAttributes() {
     return relatedAttributes;
+  },
+  get cssRules() {
+    return cssRules;
   }
 };
 
@@ -27346,11 +27369,13 @@ var Layer = function (_BaseNode) {
       var clearContext = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
 
       if (this.__updateStyleTag) {
-        var nodes = this.querySelectorAll('*');
-        _stylesheet2.default.computeStyle(this);
-        nodes.forEach(function (node) {
-          _stylesheet2.default.computeStyle(node);
-        });
+        if (_stylesheet2.default.cssRules.length > 0) {
+          var nodes = this.querySelectorAll('*');
+          _stylesheet2.default.computeStyle(this);
+          nodes.forEach(function (node) {
+            _stylesheet2.default.computeStyle(node);
+          });
+        }
         this.__updateStyleTag = false;
       }
       var renderDeferrer = this[_renderDeferer];
