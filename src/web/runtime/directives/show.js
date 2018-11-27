@@ -1,12 +1,15 @@
 /* @flow */
 
 import { enter, leave } from '../modules/transition'
-import { BaseNode } from 'spritejs'
+import { BaseSprite } from 'spritejs'
 
 function getStyle (el) {
-  if (el.style) return el.style
+  if (el instanceof BaseSprite) {
+    return el.attributes
+  }
+  if (el.canvas && el.canvas.style) return el.canvas.style
   if (el.container && el.container.style) return el.container.style
-  return el.attributes
+  return el.style
 }
 
 // recursively search for possible transition defined inside the component root
@@ -21,7 +24,7 @@ export default {
     vnode = locateNode(vnode)
     const transition = vnode.data && vnode.data.transition
     const style = getStyle(el)
-    if (el instanceof BaseNode) {
+    if (el instanceof BaseSprite) {
       const states = style.states
       if (!value && states.hide) {
         const beforeHide = { __default: true }
@@ -61,7 +64,7 @@ export default {
     vnode = locateNode(vnode)
     const transition = vnode.data && vnode.data.transition
     const style = getStyle(el)
-    if (el instanceof BaseNode) {
+    if (el instanceof BaseSprite) {
       if (value) el.show()
       else el.hide()
     } else {
