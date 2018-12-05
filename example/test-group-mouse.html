@@ -33,9 +33,11 @@
   new Vue({
     el: '#app',
     data () {
-      return {
-
+      const props = {
+        x: 100,
+        y: 100,
       }
+      return {props}
     },
     methods: {
       enter (event) {
@@ -52,7 +54,7 @@
     <scene id="test" :viewport="[300, 300]" displayRatio="auto">
       <layer>
         <s-group :pos="[100,100]">
-          <s-sprite @mouseenter="enter($event)" @mouseleave="leave($event)" class="red"></s-sprite>
+          <s-sprite @mouseenter="enter($event)" @mouseleave="leave($event)" class="red" :attrs="props"></s-sprite>
         </s-group>
       </layer>
     </scene>
