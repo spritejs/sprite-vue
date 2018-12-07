@@ -9839,7 +9839,7 @@ function Paper2D() {
   return new (Function.prototype.bind.apply(_scene2.default, [null].concat(args)))();
 }
 
-var version = '2.24.0';
+var version = '2.24.5';
 
 exports._debugger = _platform._debugger;
 exports.version = version;
@@ -15949,7 +15949,7 @@ function parseStringTransform(str) {
 }
 
 function parseValuesString(str, parser) {
-  if (typeof str === 'string' && str !== '') {
+  if (typeof str === 'string' && str !== '' && str !== 'inherit') {
     var values = str.split(/[\s,]+/g);
     return values.map(function (v) {
       var ret = parser ? parser(v) : v;
@@ -17023,7 +17023,7 @@ function parseValue() {
     var setter = descriptor.set;
 
     descriptor.set = function (val) {
-      if (val != null && val !== '') {
+      if (val != null && val !== '' && val !== 'inherit') {
         val = parsers.reduce(function (v, parser) {
           return parser(v);
         }, val);
@@ -20004,7 +20004,8 @@ var SpriteAttr = (_dec = (0, _utils.deprecate)('You can remove this call.'), _de
 
         if (_this[_default][key] !== value) {
           if (key !== 'offsetPath' && key !== 'offsetDistance' && key !== 'offsetRotate' && key !== 'offsetAngle' && key !== 'offsetPoint') {
-            _this[key] = value;
+            // this[key] = value;
+            _this.subject.attr(key, value);
           } else if (key === 'offsetPath') {
             var offsetPath = new _svgPathToCanvas2.default(value);
             _this.set('offsetPath', offsetPath.d);
@@ -20024,7 +20025,7 @@ var SpriteAttr = (_dec = (0, _utils.deprecate)('You can remove this call.'), _de
 
       var ret = {};
       [].concat((0, _toConsumableArray3.default)(this.__attributesSet)).forEach(function (key) {
-        if (key !== 'id') {
+        if (key !== 'id' && key.indexOf('__internal') !== 0) {
           ret[key] = _this2[key];
         }
       });
@@ -20864,7 +20865,7 @@ var cssWhat = __webpack_require__(221);
 var cssRules = [];
 var keyFrames = {};
 
-var relatedAttributes = new _set2.default();
+var relatedAttributes = new _set2.default(['__internal_state_hover_', '__internal_state_active_']);
 
 var _matchedSelectors = (0, _symbol2.default)('matchedSelectors');
 var _transitions = (0, _symbol2.default)('transitions');
@@ -21346,7 +21347,7 @@ function resolveToken(token) {
       ret = ':' + token.name;
     }
     // not support yet
-    valid = token.name !== 'hover' && token.name !== 'active' && token.name !== 'focus' && token.name !== 'link' && token.name !== 'visited' && token.name !== 'lang';
+    valid = token.name !== 'focus' && token.name !== 'link' && token.name !== 'visited' && token.name !== 'lang';
     priority = token.name !== 'not' ? 1000 : 0;
   } else if (token.type === 'pseudo-element') {
     ret = '::' + token.name;
@@ -21638,6 +21639,14 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 var CSSselect = __webpack_require__(200);
 
+CSSselect.pseudos.hover = function (next) {
+  return !!next.attr('__internal_state_hover_');
+};
+
+CSSselect.pseudos.active = function (next) {
+  return !!next.attr('__internal_state_active_');
+};
+
 function isTag(elem) {
   return elem.nodeType === 1 || typeof elem.nodeType === 'string';
 }
@@ -21786,7 +21795,9 @@ function resolveQuery(query) {
   if (matches) {
     matches = matches.map(function (matched) {
       var kv = matched.slice(1, -1).split('=');
-      var arr = JSON.parse(kv[1].replace(/['"]/g, ''));
+      var arr = kv[1].slice(2, -2).split(/,/g).map(function (k) {
+        return k.trim();
+      });
       return [matched, '[' + kv[0] + '="[' + arr + ']"]'];
     });
     matches.forEach(function (_ref3) {
@@ -24789,6 +24800,7 @@ var BaseNode = function () {
         evt.target = this;
         this[_collisionState] = false;
         isCollision = true;
+        this.attr('__internal_state_hover_', null);
       }
 
       if (!evt.terminated && (isCollision || captured)) {
@@ -24820,6 +24832,12 @@ var BaseNode = function () {
           }
         }
 
+        if (type === 'mousedown' || type === 'touchstart') {
+          this.attr('__internal_state_active_', 'active');
+        } else if (type === 'mouseup' || type === 'touchend') {
+          this.attr('__internal_state_active_', null);
+        }
+
         [].concat((0, _toConsumableArray3.default)(handlers)).forEach(function (handler) {
           return handler.call(_this5, evt);
         });
@@ -24830,6 +24848,7 @@ var BaseNode = function () {
           delete _evt.target;
           _evt.terminated = false;
           this.dispatchEvent('mouseenter', _evt, true, true);
+          this.attr('__internal_state_hover_', 'hover');
           this[_collisionState] = true;
         }
       }
@@ -24840,6 +24859,7 @@ var BaseNode = function () {
         delete _evt2.target;
         _evt2.terminated = false;
         this.dispatchEvent('mouseleave', _evt2);
+        this.attr('__internal_state_hover_', null);
         // this[_collisionState] = false;
       }
 
@@ -24884,6 +24904,11 @@ var BaseNode = function () {
         zOrder: zOrder
       }, true, true);
 
+      parent.dispatchEvent('appendChild', {
+        child: this,
+        zOrder: zOrder
+      }, true, true);
+
       return this;
     }
 
@@ -24903,6 +24928,11 @@ var BaseNode = function () {
 
       this.dispatchEvent('remove', {
         parent: parent,
+        zOrder: zOrder
+      }, true, true);
+
+      parent.dispatchEvent('removeChild', {
+        child: this,
         zOrder: zOrder
       }, true, true);
 
@@ -28787,13 +28817,22 @@ var Group = (_class3 = (_temp2 = _class4 = function (_BaseSprite) {
       }
     }
   }, {
-    key: 'render',
-    value: function render(t, drawingContext) {
+    key: 'draw',
+    value: function draw(t) {
+      var drawingContext = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : this.context;
+
+      // must relayout before draw
+      // prevent originalRect changing when rendering.
       var display = this.attr('display');
       if (display !== '' && display !== 'static' && !this[_layoutTag]) {
         this.relayout();
+        this[_layoutTag] = true;
       }
-
+      return (0, _get3.default)(Group.prototype.__proto__ || (0, _getPrototypeOf2.default)(Group.prototype), 'draw', this).call(this, t, drawingContext);
+    }
+  }, {
+    key: 'render',
+    value: function render(t, drawingContext) {
       var clipPath = this.attr('clip');
       if (clipPath) {
         this.svg.beginPath().to(drawingContext);
@@ -28829,10 +28868,6 @@ var Group = (_class3 = (_temp2 = _class4 = function (_BaseSprite) {
         }
       }
       drawingContext.restore();
-
-      if (display !== '' && display !== 'static') {
-        this[_layoutTag] = true;
-      }
     }
   }, {
     key: 'isVirtual',
@@ -34785,13 +34820,13 @@ var _isFinite = __webpack_require__(300);
 
 var _isFinite2 = _interopRequireDefault(_isFinite);
 
-var _slicedToArray2 = __webpack_require__(90);
-
-var _slicedToArray3 = _interopRequireDefault(_slicedToArray2);
-
 var _set = __webpack_require__(159);
 
 var _set2 = _interopRequireDefault(_set);
+
+var _slicedToArray2 = __webpack_require__(90);
+
+var _slicedToArray3 = _interopRequireDefault(_slicedToArray2);
 
 var _getPrototypeOf = __webpack_require__(184);
 
@@ -34867,6 +34902,34 @@ var ExLayer = function (_Layer) {
     canvas.style.position = 'absolute';
 
     var _this = (0, _possibleConstructorReturn3.default)(this, (ExLayer.__proto__ || (0, _getPrototypeOf2.default)(ExLayer)).call(this, { context: context, handleEvent: handleEvent, evaluateFPS: evaluateFPS, renderMode: renderMode, autoRender: autoRender, useDocumentCSS: useDocumentCSS }));
+
+    if (context.canvas && context.canvas.addEventListener) {
+      context.canvas.addEventListener('mouseleave', function (evt) {
+        // fixed mouseleave outof range
+        var layers = _this.parent ? _this.parent.sortedChildNodes : [_this];
+
+        var _evt$target$getBoundi = evt.target.getBoundingClientRect(),
+            left = _evt$target$getBoundi.left,
+            top = _evt$target$getBoundi.top;
+
+        var clientX = evt.clientX,
+            clientY = evt.clientY;
+
+        var originalX = Math.round((clientX | 0) - left);
+        var originalY = Math.round((clientY | 0) - top);
+
+        var _this$toLocalPos = _this.toLocalPos(originalX, originalY),
+            _this$toLocalPos2 = (0, _slicedToArray3.default)(_this$toLocalPos, 2),
+            x = _this$toLocalPos2[0],
+            y = _this$toLocalPos2[1];
+
+        layers.forEach(function (layer) {
+          if (layer.handleEvent) {
+            layer.dispatchEvent('mouseleave', { originalEvent: evt, layerX: x, layerY: y, originalX: originalX, originalY: originalY, x: x, y: y });
+          }
+        });
+      });
+    }
 
     if (resolution) {
       _this.resolution = resolution;
