@@ -36435,6 +36435,9 @@ function wrapNode(node) {
   node.isVisible = function () {
     return false;
   };
+  node.draw = function () {
+    return false;
+  };
   node.__data = new spritejs__WEBPACK_IMPORTED_MODULE_4__["DataNode"]();
   // reflect to get _attr Symbol
   babel_runtime_core_js_object_get_own_property_symbols__WEBPACK_IMPORTED_MODULE_0___default()(node.__data).some(function (symbol) {
