@@ -9839,7 +9839,7 @@ function Paper2D() {
   return new (Function.prototype.bind.apply(_scene2.default, [null].concat(args)))();
 }
 
-var version = '2.24.10';
+var version = '2.24.12';
 
 exports._debugger = _platform._debugger;
 exports.version = version;
@@ -17528,9 +17528,9 @@ var BaseSprite = (_dec = (0, _utils.deprecate)('Instead use sprite.cache = null'
           });
         }
         _this2[_attr][key] = value;
-        if (_stylesheet2.default.relatedAttributes.has(key)) {
-          _this2.updateStyles();
-        }
+        // if(stylesheet.relatedAttributes.has(key)) {
+        //   this.updateStyles();
+        // }
       };
       if ((typeof props === 'undefined' ? 'undefined' : (0, _typeof3.default)(props)) === 'object') {
         (0, _entries2.default)(props).forEach(function (_ref) {
@@ -18089,8 +18089,32 @@ var BaseSprite = (_dec = (0, _utils.deprecate)('Instead use sprite.cache = null'
     value: function draw(t) {
       var drawingContext = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : this.context;
       // eslint-disable-line complexity
-      if (this.__styleNeedUpdate) {
+      var styleNeedUpdate = this.__styleNeedUpdate;
+      if (styleNeedUpdate) {
         _stylesheet2.default.computeStyle(this);
+        if (this.querySelectorAll) {
+          var children = this.querySelectorAll('*');
+          children.forEach(function (child) {
+            return _stylesheet2.default.computeStyle(child);
+          });
+        }
+        if (styleNeedUpdate === 'siblings') {
+          if (this.parent) {
+            var _children = this.parent.children;
+            var index = _children.indexOf(this);
+            var len = _children.length;
+            for (var i = index + 1; i < len; i++) {
+              var node = _children[i];
+              _stylesheet2.default.computeStyle(node);
+              if (node.querySelectorAll) {
+                var nodes = node.querySelectorAll('*');
+                nodes.forEach(function (child) {
+                  return _stylesheet2.default.computeStyle(child);
+                });
+              }
+            }
+          }
+        }
       }
       if (!this.isVisible()) {
         delete this.lastRenderBox;
@@ -19915,10 +19939,9 @@ var SpriteAttr = (_dec = (0, _utils.deprecate)('You can remove this call.'), _de
         oldVal = this.subject.data(dataKey);
         this.subject.data(dataKey, val);
       } else {
-        if (!this.__styleTag && val != null) {
+        if (val != null) {
           this.__attributesSet.add(key);
-        }
-        if (!this.__styleTag && val == null) {
+        } else {
           val = this[_default][key];
           if (this.__attributesSet.has(key)) {
             this.__attributesSet.delete(key);
@@ -19927,8 +19950,10 @@ var SpriteAttr = (_dec = (0, _utils.deprecate)('You can remove this call.'), _de
         oldVal = this[_attr][key];
         this[_attr][key] = val;
       }
-      if (oldVal !== val && _stylesheet2.default.relatedAttributes.has(key)) {
-        this.subject.updateStyles();
+      if (_stylesheet2.default.relatedAttributes.has(key)) {
+        if ((typeof oldVal === 'undefined' ? 'undefined' : (0, _typeof3.default)(oldVal)) === 'object' || (typeof val === 'undefined' ? 'undefined' : (0, _typeof3.default)(val)) === 'object' || oldVal !== val) {
+          this.subject.updateStyles();
+        }
       }
     }
   }, {
@@ -20873,7 +20898,7 @@ var cssWhat = __webpack_require__(221);
 var cssRules = [];
 var keyFrames = {};
 
-var relatedAttributes = new _set2.default(['__internal_state_hover_', '__internal_state_active_']);
+var relatedAttributes = new _set2.default();
 
 var _matchedSelectors = (0, _symbol2.default)('matchedSelectors');
 var _transitions = (0, _symbol2.default)('transitions');
@@ -21354,6 +21379,11 @@ function resolveToken(token) {
     } else {
       ret = ':' + token.name;
     }
+    if (token.name === 'hover') {
+      relatedAttributes.add('__internal_state_hover_');
+    } else if (token.name === 'active') {
+      relatedAttributes.add('__internal_state_active_');
+    }
     // not support yet
     valid = token.name !== 'focus' && token.name !== 'link' && token.name !== 'visited' && token.name !== 'lang';
     priority = token.name !== 'not' ? 1000 : 0;
@@ -21517,7 +21547,7 @@ exports.default = {
   },
   computeStyle: function computeStyle(el) {
     if (!el.layer || !el.attributes) return {};
-    this.__styleNeedUpdate = false;
+    el.__styleNeedUpdate = false;
     if (cssRules.length <= 0) return;
     var attrs = {};
     var selectors = [];
@@ -21548,7 +21578,7 @@ exports.default = {
         selectors.push(selector);
       }
     });
-    if (selectors.length <= 0) return;
+    // if(selectors.length <= 0) return;
     var matchedSelectors = selectors.join();
     if (el[_matchedSelectors] !== matchedSelectors) {
       // console.log(transitions);
@@ -24665,18 +24695,16 @@ var BaseNode = function () {
       var nextSibling = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
 
       // append to parent & reset name or class or id auto updateStyles
-      this.__styleNeedUpdate = true;
-      if (this.children) {
-        this.children.forEach(function (child) {
-          return child.updateStyles();
-        });
-      }
-      if (nextSibling) {
-        var nextChild = this.nextElementSilbing;
-        if (nextChild) {
-          nextChild.updateStyles(true);
-        }
-      }
+      this.__styleNeedUpdate = nextSibling ? 'siblings' : 'children';
+      // if(this.children) {
+      //   this.children.forEach(child => child.updateStyles());
+      // }
+      // if(nextSibling) {
+      //   const nextChild = this.nextElementSibling;
+      //   if(nextChild) {
+      //     nextChild.updateStyles(true);
+      //   }
+      // }
       this.forceUpdate();
     }
   }, {
@@ -25007,22 +25035,22 @@ var BaseNode = function () {
       return this.parent;
     }
   }, {
-    key: 'nextSilbing',
+    key: 'nextSibling',
     get: function get() {
       return this.getNodeNearBy(1);
     }
   }, {
-    key: 'previousSilbing',
+    key: 'previousSibling',
     get: function get() {
       return this.getNodeNearBy(-1);
     }
   }, {
-    key: 'nextElementSilbing',
+    key: 'nextElementSibling',
     get: function get() {
       return this.getNodeNearBy(1, true);
     }
   }, {
-    key: 'previousElementSilbing',
+    key: 'previousElementSibling',
     get: function get() {
       return this.getNodeNearBy(-1, true);
     }
