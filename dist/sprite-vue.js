@@ -9839,7 +9839,7 @@ function Paper2D() {
   return new (Function.prototype.bind.apply(_scene2.default, [null].concat(args)))();
 }
 
-var version = '2.24.9';
+var version = '2.24.10';
 
 exports._debugger = _platform._debugger;
 exports.version = version;
@@ -18088,10 +18088,15 @@ var BaseSprite = (_dec = (0, _utils.deprecate)('Instead use sprite.cache = null'
     key: 'draw',
     value: function draw(t) {
       var drawingContext = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : this.context;
-
+      // eslint-disable-line complexity
       if (this.__styleNeedUpdate) {
         _stylesheet2.default.computeStyle(this);
       }
+      if (!this.isVisible()) {
+        delete this.lastRenderBox;
+        return;
+      }
+
       var bound = this.originalRect;
       var cachableContext = !this.isVirtual && this.cache;
 
@@ -21512,6 +21517,7 @@ exports.default = {
   },
   computeStyle: function computeStyle(el) {
     if (!el.layer || !el.attributes) return {};
+    this.__styleNeedUpdate = false;
     if (cssRules.length <= 0) return;
     var attrs = {};
     var selectors = [];
@@ -21604,7 +21610,6 @@ exports.default = {
       el.attributes.__styleTag = true;
       el.attr(attrs);
       el.attributes.__styleTag = false;
-      this.__styleNeedUpdate = false;
       // if(el.forceUpdate) el.forceUpdate();
     }
   },
@@ -24941,6 +24946,10 @@ var BaseNode = function () {
         zOrder: zOrder
       }, true, true);
 
+      if (this.layer) {
+        this.updateStyles(true);
+      }
+
       return this;
     }
 
@@ -24951,6 +24960,11 @@ var BaseNode = function () {
     value: function disconnect(parent) {
       if (!this.parent || parent !== this.parent) {
         throw new Error('Invalid node to disconnect');
+      }
+
+      if (this.layer) {
+        var nextSibling = this.nextElementSilbing;
+        if (nextSibling) nextSibling.updateStyles(true);
       }
 
       var zOrder = this.zOrder;
@@ -28037,20 +28051,18 @@ var Layer = function (_BaseNode) {
         child.isDirty = false;
 
         if (child.parent === this) {
-          var isVisible = child.isVisible();
-          if (isVisible) {
-            child.draw(t);
-            if (this.renderMode === 'repaintDirty') {
+          child.draw(t);
+          if (this.renderMode === 'repaintDirty') {
+            if (child.isVisible()) {
               child.lastRenderBox = child.renderBox;
             } else {
-              child.lastRenderBox = 'no-calc';
+              delete child.lastRenderBox;
             }
           } else {
-            // invisible, only need to remove lastRenderBox
-            delete child.lastRenderBox;
+            child.lastRenderBox = 'no-calc';
           }
           if (isDirty) {
-            child.dispatchEvent('update', { target: child, renderTime: t, isVisible: isVisible }, true, true);
+            child.dispatchEvent('update', { target: child, renderTime: t }, true, true);
           }
         }
       }
@@ -28909,9 +28921,7 @@ var Group = (_class3 = (_temp2 = _class4 = function (_BaseSprite) {
             isDirty = child.isDirty;
         child.isDirty = false;
 
-        if (child.isVisible()) {
-          child.draw(t, drawingContext);
-        }
+        child.draw(t, drawingContext);
         if (isDirty) {
           child.dispatchEvent('update', { target: child, renderTime: t }, true, true);
         }
@@ -30889,7 +30899,6 @@ exports.default = {
       }
 
       if (sprite.layer) {
-        sprite.updateStyles(true);
         return sprite.enter();
       }
       return sprite;
@@ -30939,11 +30948,7 @@ exports.default = {
       if (sprite.isVisible() || sprite.lastRenderBox) {
         sprite.forceUpdate();
       }
-      var parent = sprite.parent;
       sprite.disconnect(that);
-      if (parent && parent.children[0]) {
-        parent.children[0].updateStyles(true);
-      }
       return sprite;
     }
 
@@ -31014,7 +31019,6 @@ exports.default = {
         _this5[_zOrder]++;
 
         if (_this5.layer) {
-          newchild.updateStyles(true);
           return newchild.enter();
         }
       };
@@ -35860,17 +35864,17 @@ var Scene = function (_BaseNode) {
           layer.dataset = {};
         }
         layer.dataset.layerId = layer.id;
-        layer.connect = function (parent, zOrder) {
-          layer.parent = parent;
-          Object.defineProperty(layer, 'zOrder', {
-            value: zOrder,
-            writable: false,
-            configurable: true
-          });
-        };
-        layer.disconnect = function (parent) {
-          delete layer.zOrder;
-        };
+        // layer.connect = (parent, zOrder) => {
+        //   layer.parent = parent;
+        //   Object.defineProperty(layer, 'zOrder', {
+        //     value: zOrder,
+        //     writable: false,
+        //     configurable: true,
+        //   });
+        // };
+        // layer.disconnect = (parent) => {
+        //   delete layer.zOrder;
+        // };
       }
       var id = layer.id;
 
@@ -36553,6 +36557,13 @@ function parentNode(node) {
 }
 
 function nextSibling(node) {
+  if (node instanceof spritejs__WEBPACK_IMPORTED_MODULE_4__["BaseNode"]) {
+    if (node.parent) {
+      var idx = node.parent.childNodes.indexOf(node);
+      return node.parent.childNodes[idx + 1];
+    }
+    return null;
+  }
   return node.nextSibling;
 }
 
