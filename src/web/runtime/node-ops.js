@@ -1,7 +1,7 @@
 /* @flow */
 
 import { namespaceMap, isReservedTag } from 'web/util/index'
-import { isValidNodeType, createNode, Scene, Label, BaseNode, DataNode } from 'spritejs'
+import { isValidNodeType, createNode, Scene, Label, BaseNode } from 'spritejs'
 
 export function createElement (tagName: string, vnode: VNode): Element {
   let isSpriteNode = !isReservedTag(tagName) && isValidNodeType(tagName)
@@ -87,7 +87,7 @@ function wrapNode (node) {
   node.forceUpdate = () => false
   node.isVisible = () => false
   node.draw = () => false
-  node.__data = new DataNode()
+  node.__data = new BaseNode()
   // reflect to get _attr Symbol
   Object.getOwnPropertySymbols(node.__data).some((symbol) => {
     if (symbol.toString() === 'Symbol(attr)') {

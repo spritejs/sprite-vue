@@ -11,6 +11,5 @@ module.exports = {
   server: 'vue/src/server',
   sfc: 'vue/src/sfc',
   '@': path.resolve(__dirname, '../src'),
-  // spritejs: 'spritejs/src/index.js',
   spritejs: 'spritejs/dist/spritejs.js',
 }
