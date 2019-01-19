@@ -9908,7 +9908,7 @@ function Paper2D() {
   return _babel_runtime_helpers_construct__WEBPACK_IMPORTED_MODULE_0___default()(Scene, args);
 }
 
-var version = "2.26.1";
+var version = "2.27.1";
 
 
 /***/ }),
@@ -11793,6 +11793,25 @@ function () {
       return Object(_platform__WEBPACK_IMPORTED_MODULE_6__["isPointInPath"])(this, x, y);
     }
   }, {
+    key: "isPointInStroke",
+    value: function isPointInStroke(x, y, _ref) {
+      var _ref$lineWidth = _ref.lineWidth,
+          lineWidth = _ref$lineWidth === void 0 ? 1 : _ref$lineWidth,
+          _ref$lineCap = _ref.lineCap,
+          lineCap = _ref$lineCap === void 0 ? 'butt' : _ref$lineCap,
+          _ref$lineJoin = _ref.lineJoin,
+          lineJoin = _ref$lineJoin === void 0 ? 'miter' : _ref$lineJoin;
+
+      if (_platform__WEBPACK_IMPORTED_MODULE_6__["isPointInStroke"]) {
+        return Object(_platform__WEBPACK_IMPORTED_MODULE_6__["isPointInStroke"])(this, x, y, {
+          lineWidth: lineWidth,
+          lineCap: lineCap,
+          lineJoin: lineJoin
+        });
+      } // node-canvas return undefined
+
+    }
+  }, {
     key: "getPointAtLength",
     value: function getPointAtLength(len) {
       return Object(_platform__WEBPACK_IMPORTED_MODULE_6__["getPointAtLength"])(this.d, len);
@@ -12257,6 +12276,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "getPointAtLength", function() { return getPointAtLength; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "getTotalLength", function() { return getTotalLength; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isPointInPath", function() { return isPointInPath; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isPointInStroke", function() { return isPointInStroke; });
 function createSvgPath(d) {
   var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   path.setAttribute('d', d);
@@ -12276,11 +12296,30 @@ function getTotalLength(d, len) {
   var path = createSvgPath(d);
   return path.getTotalLength(len);
 }
+var context = null;
 function isPointInPath(_ref, x, y) {
   var d = _ref.d;
+  if (!context) context = document.createElement('canvas').getContext('2d');
   var path = new Path2D(d);
-  var context = document.createElement('canvas').getContext('2d');
   return context.isPointInPath(path, x, y);
+}
+function isPointInStroke(_ref2, x, y, _ref3) {
+  var d = _ref2.d;
+  var _ref3$lineWidth = _ref3.lineWidth,
+      lineWidth = _ref3$lineWidth === void 0 ? 1 : _ref3$lineWidth,
+      _ref3$lineCap = _ref3.lineCap,
+      lineCap = _ref3$lineCap === void 0 ? 'butt' : _ref3$lineCap,
+      _ref3$lineJoin = _ref3.lineJoin,
+      lineJoin = _ref3$lineJoin === void 0 ? 'miter' : _ref3$lineJoin;
+  if (!context) context = document.createElement('canvas').getContext('2d');
+  context.save();
+  context.lineWidth = lineWidth;
+  context.lineCap = lineCap;
+  context.lineJoin = lineJoin;
+  var path = new Path2D(d);
+  var ret = context.isPointInStroke(path, x, y);
+  context.restore();
+  return ret;
 }
 
 /***/ }),
@@ -14020,17 +14059,16 @@ function attr(options) {
         _setter.call(this, val);
 
         if (subject && !this.__quietTag && this.__updateTag) {
+          var clearLayout = this.__clearLayout;
+
           if (subject.hasLayout) {
             var offsetSize = subject.boxOffsetSize,
                 layoutSize = subject.__lastLayout;
-
-            if (this.__clearLayout || !layoutSize || offsetSize[0] !== layoutSize[0] || offsetSize[1] !== layoutSize[1]) {
-              subject.clearLayout();
-            }
-
+            clearLayout |= !layoutSize || offsetSize[0] !== layoutSize[0] || offsetSize[1] !== layoutSize[1];
             subject.__lastLayout = offsetSize;
           }
 
+          if (clearLayout) subject.clearLayout();
           subject.forceUpdate(_clearCache);
 
           if (this.__reflowTag) {
@@ -15033,6 +15071,7 @@ var BaseSprite = _babel_runtime_helpers_decorate__WEBPACK_IMPORTED_MODULE_6___de
         var zOrder = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
 
         if (parent && !(parent instanceof _basenode__WEBPACK_IMPORTED_MODULE_13__["default"])) {
+          // directly connect to canvas2d context
           var node = new _basenode__WEBPACK_IMPORTED_MODULE_13__["default"]();
           node.context = parent;
           node.timeline = new sprite_animator__WEBPACK_IMPORTED_MODULE_10__["Timeline"]();
@@ -16663,6 +16702,13 @@ var SpriteAttr = _babel_runtime_helpers_decorate__WEBPACK_IMPORTED_MODULE_6___de
     F: SpriteAttr,
     d: [{
       kind: "method",
+      key: "clearFlow",
+      value: function value() {
+        this.__reflowTag = true;
+        return this;
+      }
+    }, {
+      kind: "method",
       key: "set",
       value: function value(key, _value) {
         var isQuiet = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
@@ -17000,7 +17046,9 @@ var SpriteAttr = _babel_runtime_helpers_decorate__WEBPACK_IMPORTED_MODULE_6___de
       }
     }, {
       kind: "field",
-      decorators: [_utils__WEBPACK_IMPORTED_MODULE_12__["attr"]],
+      decorators: [Object(_utils__WEBPACK_IMPORTED_MODULE_12__["attr"])({
+        cache: cache
+      })],
       key: "transformMatrix",
       value: function value() {
         return [1, 0, 0, 1, 0, 0];
@@ -17409,13 +17457,6 @@ var Attr = _babel_runtime_helpers_decorate__WEBPACK_IMPORTED_MODULE_4___default(
         return _utils__WEBPACK_IMPORTED_MODULE_5__["attributeNames"];
       }
     }, {
-      kind: "field",
-      static: true,
-      key: "attrDefaultValues",
-      value: function value() {
-        return {};
-      }
-    }, {
       kind: "method",
       static: true,
       key: "addAttributes",
@@ -17483,15 +17524,6 @@ var Attr = _babel_runtime_helpers_decorate__WEBPACK_IMPORTED_MODULE_4___default(
       }
     }, {
       kind: "method",
-      key: "setAttrIndex",
-      value: function value(key, val, idx) {
-        if (val == null) val = this.getDefaultValue(key)[idx];
-        var arr = this[key];
-        arr[idx] = val;
-        this.set(key, arr);
-      }
-    }, {
-      kind: "method",
       key: "saveObj",
       value: function value(key, val) {
         this[_temp].set(key, val);
@@ -17515,13 +17547,6 @@ var Attr = _babel_runtime_helpers_decorate__WEBPACK_IMPORTED_MODULE_4___default(
       key: "clearStyle",
       value: function value() {
         this[_style] = {};
-      }
-    }, {
-      kind: "method",
-      key: "clearFlow",
-      value: function value() {
-        this.__reflowTag = true;
-        return this;
       }
     }, {
       kind: "method",
@@ -17930,7 +17955,7 @@ function () {
     }
   }, {
     key: "forceUpdate",
-    value: function forceUpdate() {
+    value: function forceUpdate(clearCache) {
       var parent = this.parent;
 
       if (parent) {
@@ -21246,6 +21271,7 @@ function () {
           throw new Error('Node already batched!');
         }
 
+        node.attr('enableCache', true);
         var that = _this;
         Object.defineProperty(node, 'cache', {
           configurable: true,
@@ -21423,14 +21449,38 @@ var GroupAttr = _babel_runtime_helpers_decorate__WEBPACK_IMPORTED_MODULE_8___def
         relayout: relayout
       }), Object(_utils__WEBPACK_IMPORTED_MODULE_9__["relative"])('width')],
       key: "layoutWidth",
-      value: void 0
+      value: function value() {
+        return '';
+      }
     }, {
       kind: "field",
       decorators: [Object(_utils__WEBPACK_IMPORTED_MODULE_9__["attr"])({
         relayout: relayout
       }), Object(_utils__WEBPACK_IMPORTED_MODULE_9__["relative"])('height')],
       key: "layoutHeight",
-      value: void 0
+      value: function value() {
+        return '';
+      }
+    }, {
+      kind: "field",
+      decorators: [Object(_utils__WEBPACK_IMPORTED_MODULE_9__["attr"])({
+        reflow: reflow,
+        relayout: relayout
+      }), Object(_utils__WEBPACK_IMPORTED_MODULE_9__["relative"])('width')],
+      key: "width",
+      value: function value() {
+        return '';
+      }
+    }, {
+      kind: "field",
+      decorators: [Object(_utils__WEBPACK_IMPORTED_MODULE_9__["attr"])({
+        reflow: reflow,
+        relayout: relayout
+      }), Object(_utils__WEBPACK_IMPORTED_MODULE_9__["relative"])('height')],
+      key: "height",
+      value: function value() {
+        return '';
+      }
     }, {
       kind: "field",
       decorators: [Object(_utils__WEBPACK_IMPORTED_MODULE_9__["attr"])({
@@ -21665,7 +21715,7 @@ var Group = _babel_runtime_helpers_decorate__WEBPACK_IMPORTED_MODULE_8___default
         if (!swallow && !evt.terminated && type !== 'mouseenter') {
           var isCollision = collisionState || this.pointCollision(evt);
 
-          if (isCollision || type === 'mouseleave') {
+          if (isCollision || type === 'mouseleave' || this.attr('clipOverflow')) {
             var scrollLeft = this.attr('scrollLeft'),
                 scrollTop = this.attr('scrollTop'),
                 borderWidth = this.attr('border').width,
@@ -22201,7 +22251,7 @@ var PathSpriteAttr = _babel_runtime_helpers_decorate__WEBPACK_IMPORTED_MODULE_7_
       kind: "field",
       decorators: [Object(_utils__WEBPACK_IMPORTED_MODULE_8__["attr"])({
         quiet: quiet
-      }), Object(_utils__WEBPACK_IMPORTED_MODULE_8__["inherit"])('box')],
+      }), Object(_utils__WEBPACK_IMPORTED_MODULE_8__["inherit"])('auto')],
       key: "bounding",
       value: function value() {
         return 'inherit';
@@ -22285,13 +22335,47 @@ var Path = _babel_runtime_helpers_decorate__WEBPACK_IMPORTED_MODULE_7___default(
       }
     }, {
       kind: "method",
+      key: "isClosed",
+      value: function value() {
+        var d = this.attr('d');
+
+        if (d) {
+          return /z$/img.test(d);
+        }
+
+        return false;
+      }
+    }, {
+      kind: "method",
       key: "findPath",
       value: function value(offsetX, offsetY) {
         var rect = this.originalRect;
         var pathOffset = this.pathOffset;
+        var svg = this.svg;
 
-        if (this.svg && this.svg.isPointInPath(offsetX - rect[0] - pathOffset[0], offsetY - rect[1] - pathOffset[1])) {
-          return [this.svg];
+        if (svg) {
+          var x = offsetX - rect[0] - pathOffset[0],
+              y = offsetY - rect[1] - pathOffset[1];
+          var collision = false;
+
+          if (this.isClosed()) {
+            collision = svg.isPointInPath(x, y);
+          }
+
+          if (!collision) {
+            var lineWidth = this.attr('lineWidth') + (parseFloat(this.attr('bounding')) || 0),
+                lineCap = this.attr('lineCap'),
+                lineJoin = this.attr('lineJoin');
+            collision = svg.isPointInStroke(x, y, {
+              lineWidth: lineWidth,
+              lineCap: lineCap,
+              lineJoin: lineJoin
+            });
+          }
+
+          if (collision) {
+            return [svg];
+          }
         }
 
         return [];
@@ -22388,7 +22472,9 @@ var Path = _babel_runtime_helpers_decorate__WEBPACK_IMPORTED_MODULE_7___default(
       kind: "method",
       key: "pointCollision",
       value: function value(evt) {
-        if (_babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_1___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_4___default()(Path.prototype), "pointCollision", this).call(this, evt)) {
+        var bounding = this.attr('bounding');
+
+        if (_babel_runtime_helpers_get__WEBPACK_IMPORTED_MODULE_1___default()(_babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_4___default()(Path.prototype), "pointCollision", this).call(this, evt) || bounding !== 'auto' && bounding !== 'box' && bounding !== 'path' && bounding !== 0) {
           var offsetX = evt.offsetX,
               offsetY = evt.offsetY;
           if (offsetX == null && offsetY == null) return true;
@@ -22402,7 +22488,7 @@ var Path = _babel_runtime_helpers_decorate__WEBPACK_IMPORTED_MODULE_7___default(
 
           evt.targetPaths = this.findPath(offsetX, offsetY);
 
-          if (this.attr('bounding') === 'path') {
+          if (bounding !== 'box' && !(bounding === 'auto' && (this.attr('borderWidth') > 0 || this.attr('bgcolor') || this.attr('gradients').bgcolor))) {
             return evt.targetPaths.length > 0;
           }
 
@@ -23425,10 +23511,10 @@ var defaultValues = {
     'beforeShow:': {
       duration: 300,
       easing: 'ease-in'
-    },
-    enterMode: 'normal',
-    exitMode: 'normal'
-  }
+    }
+  },
+  enterMode: 'normal',
+  exitMode: 'normal'
 };
 _core_baseattr__WEBPACK_IMPORTED_MODULE_1__["default"].addAttributes({
   states: {

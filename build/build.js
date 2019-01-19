@@ -38,5 +38,5 @@ function uploadToCDN(stats) {
   // await buildTask({esnext: true})
   // await buildTask({esnext: true, production: true})
   const stats = await buildTask({production: true}) // build compressed file
-  await uploadToCDN(stats)
+  // await uploadToCDN(stats)
 }())
