@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Example</title>
+  <script src="/js/sprite-vue.js"></script>
+  <!-- <script src="/js/sprite-vue-debug.js"></script> -->
+  <style>
+  #container {
+    width: 600px;
+    height: 600px;
+    position: relative;
+  }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+const { Vue } = spritevue
+
+Vue.component('my-scene', {
+  states() {
+    return {
+      active: {
+        opacity: 1.0
+      },
+      deactive: {
+        opacity: 0.2
+      }
+    }
+  },
+  actions: [
+    {
+      both: ['active', 'deactive'],
+      action: {
+        duration: 1000,
+        easing: 'ease-in-out'
+      }
+    }
+  ],
+  data () {
+    return {
+      viewport: [600, 600],
+      text: 'Hello',
+      items: [
+        { id: 'stop-btn', bgcolor: 'red', state: 'deactive' },
+        { id: 'warn-btn', bgcolor: '#fc0', state: 'deactive' },
+        { id: 'pass-btn', bgcolor: 'green', state: 'deactive' }
+      ],
+      attrs: {
+        bgcolor: 'blue'
+      }
+    }
+  },
+  mounted() {
+    console.log(this.$refs)
+  },
+  methods: {
+    enter (index) {
+      console.log('enter')
+      this.items[index].state = 'active'
+    },
+    leave (index) {
+      console.log('leave')
+      this.items[index].state = 'deactive'
+    },
+    tap (index, evt) {
+      console.log(index, evt)
+      // this.$set(this.attrs, 'bgcolor', 'red')
+      this.attrs.bgcolor = 'red'
+      this.attrs = { ... this.attrs }
+    },
+    changed (evt) {
+      console.log('state changed!', evt)
+    }
+  },
+  template: `
+    <scene id="container" :viewport=viewport>
+      <layer id="fglayer">
+        <group width="500" display="flex" y="100" justifyContent="space-between" bgcolor="grey">
+          <sprite v-if="index < 2" v-for="(item, index) in items" :size="[50, 50]"
+            :key="'sp'+index"
+            ref="sp"
+            :bgcolor="item.bgcolor"
+            v-on:mouseenter="enter(index)"
+            v-on:mouseleave="leave(index)"
+            v-on:click="tap(index, $event)"
+            :states="states" :actions="actions" :state="item.state"
+            v-on:state-to-active="changed"></sprite>
+        </group>
+        <sprite :attrs="attrs" :size="[100, 100]" :pos="[200, 200]"></sprite>
+      </layer>
+    </scene>
+  `
+})
+
+const v = new Vue({
+  el: '#app',
+  data() {
+    return {
+      state: true,
+    };
+  },
+  methods: {
+    toggle() {
+      console.log(111);
+      this.state = !this.state;
+    }
+  },
+  template: `
+  <div>
+    <h1 @click="toggle"> abc </h1>
+    <div v-if="state">
+      <my-scene></my-scene>
+    </div>
+  </div>
+`
+})
+  </script>
+</body>
+</html>
