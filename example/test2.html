@@ -25,18 +25,29 @@ Vue.component('my-scene', {
       viewport: [600, 600],
       ccc: {
         bgcolor: 'blue'
-      }
+      },
+      state: true
     }
   },
   mounted () {
     // console.log(this.$refs)
     this.ccc.bgcolor = 'red'
     // this.attrs = { ... this.attrs }
+    setTimeout(() => {
+      this.state = false
+    }, 1000)
+    setTimeout(() => {
+      this.state = true
+    }, 2000)
   },
   template: `
     <scene id="container" :viewport=viewport>
       <layer id="fglayer">
         <sprite :attrs="ccc" :size="[100, 100]" :pos="[200, 200]"></sprite>
+        <group>
+          <sprite bgcolor="green" :size="[100, 100]" :pos="[400, 200]"></sprite>
+          <group v-if="state" bgcolor="blue" :size="[100, 100]" :pos="[300, 200]"></group>
+        </group>
       </layer>
     </scene>
   `
