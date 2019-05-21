@@ -9909,7 +9909,7 @@ function Paper2D() {
   return _babel_runtime_helpers_construct__WEBPACK_IMPORTED_MODULE_0___default()(Scene, args);
 }
 
-var version = "2.27.16";
+var version = "2.27.17";
 
 
 /***/ }),
@@ -14786,11 +14786,12 @@ function findColor(context, sprite, prop) {
   return color;
 }
 var contextPool = [],
+    contextReady = [],
     maxPollSize = 20;
 var cacheContextPool = {
   get: function get(context) {
-    if (contextPool.length > 0) {
-      return contextPool.pop();
+    if (contextReady.length > 0) {
+      return contextReady.pop();
     }
 
     var canvas = context.canvas;
@@ -14802,13 +14803,19 @@ var cacheContextPool = {
     var copied = canvas.cloneNode();
     return copied.getContext('2d');
   },
+  flush: function flush() {
+    contextReady.push.apply(contextReady, contextPool);
+    contextPool.length = 0;
+  },
   put: function put() {
+    var size = this.size;
+
     for (var _len = arguments.length, contexts = new Array(_len), _key = 0; _key < _len; _key++) {
       contexts[_key] = arguments[_key];
     }
 
     contexts.every(function (context) {
-      var ret = contextPool.length < maxPollSize;
+      var ret = size++ < maxPollSize;
 
       if (ret) {
         context.canvas.width = 0;
@@ -14821,7 +14828,7 @@ var cacheContextPool = {
   },
 
   get size() {
-    return contextPool.length;
+    return contextPool.length + contextReady.length;
   }
 
 };
@@ -15514,7 +15521,7 @@ var BaseSprite = _babel_runtime_helpers_decorate__WEBPACK_IMPORTED_MODULE_6___de
           }
         }
 
-        if (this.cacheContext && context !== this.cacheContext && !this.cacheContext.__lockTag) {
+        if (this.cacheContext && context !== this.cacheContext) {
           _utils__WEBPACK_IMPORTED_MODULE_11__["cacheContextPool"].put(this.cacheContext);
         }
 
@@ -15787,8 +15794,6 @@ var BaseSprite = _babel_runtime_helpers_decorate__WEBPACK_IMPORTED_MODULE_6___de
         if (cachableContext) {
           // set cache before render for group
           if (!this.cache) {
-            cachableContext.__lockTag = true; // cannot put back to Pool while drawing.
-
             this.cache = cachableContext;
             this.render(t, cachableContext);
           }
@@ -15826,8 +15831,6 @@ var BaseSprite = _babel_runtime_helpers_decorate__WEBPACK_IMPORTED_MODULE_6___de
         this.dispatchEvent('afterdraw', evtArgs, true, true);
 
         if (cachableContext) {
-          delete cachableContext.__lockTag; // release lockTag
-
           if (!this.cache) _utils__WEBPACK_IMPORTED_MODULE_11__["cacheContextPool"].put(cachableContext);
           cachableContext.restore();
         }
@@ -20604,6 +20607,8 @@ function (_BaseNode) {
   }, {
     key: "drawSprites",
     value: function drawSprites(renderEls, t) {
+      _utils__WEBPACK_IMPORTED_MODULE_18__["cacheContextPool"].flush();
+
       if (this.beforeDrawTransform) {
         this.outputContext.save();
         this.beforeDrawTransform();
