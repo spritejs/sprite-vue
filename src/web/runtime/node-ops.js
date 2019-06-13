@@ -53,6 +53,9 @@ export function createElement (tagName: string, vnode: VNode): Element {
         }
       })
     }
+    if (tagName === 'echart' && attrs.option) {
+      node.setOption(attrs.option)
+    }
     return node
   }
   const elm = document.createElement(tagName)

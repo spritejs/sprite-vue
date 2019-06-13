@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Example</title>
+  <script src="/js/sprite-vue.js"></script>
+  <script crossorigin="anonymous" src="https://lib.baomitu.com/echarts/4.2.1/echarts.min.js"></script>
+  <script src="https://unpkg.com/sprite-extend-echarts@0.0.2/dist/sprite-extend-echarts.js"></script>
+  <!-- <script src="/js/sprite-vue-debug.js"></script> -->
+  <style>
+  #container {
+    width: 600px;
+    height: 600px;
+    position: relative;
+  }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+  const Vue = spritevue.Vue
+  spritevue.spritejs.use(spriteECharts);
+  new Vue({
+    el: '#app',
+    data () {
+      return {
+        text: 'Hello World',
+        font: '48px Arial',
+        option: {
+          title: {
+            text: 'ECharts 入门示例',
+          },
+          tooltip: {},
+          legend: {
+            data: ['销量'],
+          },
+          xAxis: {
+            data: ['衬衫', '羊毛衫', '雪纺衫', '裤子', '高跟鞋', '袜子'],
+          },
+          yAxis: {},
+          series: [{
+            name: '销量',
+            type: 'bar',
+            data: [5, 20, 36, 10, 10, 20],
+          }],
+        },
+      }
+    },
+    methods: {
+      clicked () {
+        console.log(1)
+        this.text = 'abc'
+      }
+    },
+    template: `
+    <scene :viewport="[700, 700]" :resolution="[1400, 1400]" displayRatio="auto">
+      <layer>
+        <s-label @click="clicked" :font="font">{{text}}</s-label>
+        <echart :size="[700, 700]" :pos="[500, 500]" :option="option"></echart>
+      </layer>
+    </scene>
+    `
+  })
+  </script>
+</body>
+</html>
