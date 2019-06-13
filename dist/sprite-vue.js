@@ -34081,6 +34081,9 @@ function createElement(tagName, vnode) {
         }
       });
     }
+    if (tagName === 'echart' && attrs.option) {
+      _node.setOption(attrs.option);
+    }
     return _node;
   }
   var elm = document.createElement(tagName);
