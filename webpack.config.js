@@ -48,7 +48,7 @@ module.exports = function (env = {}) {
             resolve('src'), 
             resolve('node_modules/vue/src'),
             // resolve('node_modules/spritejs'),
-            /node_modules\/(sprite-[\w-]+\/|svg-path-to-canvas|fast-animation-frame).*/
+            /node_modules\/(sprite-[\w-]+\/|@spritejs\/|svg-path-to-canvas\/|fast-animation-frame\/).*/
           ],
           use: {
             loader: 'babel-loader',
