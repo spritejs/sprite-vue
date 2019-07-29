@@ -36295,7 +36295,7 @@ function updateAttrs(oldVnode, vnode) {
   for (key in attrs) {
     cur = attrs[key];
     old = oldAttrs[key];
-    if (old !== cur || cur.__ob__) {
+    if (old !== cur || cur.__ob__ && key !== 'actions') {
       setAttr(elm, key, cur);
     }
   }
