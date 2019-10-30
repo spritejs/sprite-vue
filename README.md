@@ -10,6 +10,7 @@
 [例子](https://code.h5jun.com/najo/edit?js,output)
 
 ```html
+<script src="https://unpkg.com/spritejs/dist/spritejs.min.js"></script>
 <script src="https://unpkg.com/sprite-vue/dist/sprite-vue.min.js"></script>
 <div id="app"></div>
 <script>
