@@ -1,5 +1,5 @@
 /* @flow */
-import { BaseNode } from 'spritejs'
+import * as spritejs from 'spritejs'
 import { isIE, isIE9, isEdge } from 'core/util/env'
 
 import {
@@ -16,6 +16,8 @@ import {
   isEnumeratedAttr,
   isFalsyAttrValue
 } from 'web/util/index'
+
+const BaseNode = spritejs.BaseNode || spritejs.Node
 
 function updateAttrs (oldVnode: VNodeWithData, vnode: VNodeWithData) {
   const opts = vnode.componentOptions

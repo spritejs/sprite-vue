@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width">
   <title>Example</title>
+  <script src="http://unpkg.com/spritejs/dist/spritejs.js"></script>
   <script src="/js/sprite-vue.js"></script>
   <!-- <script src="/js/sprite-vue-debug.js"></script> -->
   <style>
@@ -58,7 +59,7 @@
         this.state = state === 'stateA' ? 'stateB' : 'stateA'
       }
     },
-    template: `<sprite ref="circle" anchor="0.5" :x="x" :y="y" :size="[2*radius, 2*radius]" 
+    template: `<sprite ref="circle" anchor="0.5" :x="x" :y="y" :size="[2*radius, 2*radius]"
       :states="states" :actions="actions" :state="state" :borderRadius="radius" @click="click"></sprite>`
   })
 

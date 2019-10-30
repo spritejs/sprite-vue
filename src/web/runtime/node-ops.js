@@ -1,7 +1,15 @@
 /* @flow */
 
 import { namespaceMap, isReservedTag } from 'web/util/index'
-import { isValidNodeType, createNode, Scene, Label, BaseNode } from 'spritejs'
+import * as spritejs from 'spritejs'
+
+const isValidNodeType = spritejs.isValidNodeType || spritejs.isSpriteNode
+const createNode = spritejs.createNode || spritejs.createElement
+const Scene = spritejs.Scene
+const Label = spritejs.Label
+const BaseNode = spritejs.BaseNode || spritejs.Node
+
+const isNewVersion = !!spritejs.isSpriteNode
 
 export function createElement (tagName: string, vnode: VNode): Element {
   let isSpriteNode = !isReservedTag(tagName) && isValidNodeType(tagName)
@@ -34,7 +42,12 @@ export function createElement (tagName: string, vnode: VNode): Element {
       if (attrs.id) elm.id = attrs.id
       if (!vnode.data.ref) vnode.data.ref = 'scene'
       if (!('useDocumentCSS' in attrs)) attrs.useDocumentCSS = true
-      const scene = createNode(tagName, elm, attrs)
+      let scene
+      if (isNewVersion) {
+        scene = createNode(tagName, { ...attrs, container: elm })
+      } else {
+        scene = createNode(tagName, elm, attrs)
+      }
       // elm.scene = scene
       if (attrs.resources) {
         const resources = attrs.resources
@@ -89,7 +102,13 @@ function wrapNode (node) {
   node.dispatchEvent = () => false
   node.forceUpdate = () => false
   node.isVisible = () => false
-  node.draw = () => false
+  node.draw = () => []
+  node.activateAnimations = () => false
+  node.deactivateAnimations = () => false
+  node.setResolution = () => false
+  node.getResolution = () => { return { width: 0, height: 0 } }
+  node.dispatchPointerEvent = () => false
+  // node.updateViewport = () => false
   node.__data = new BaseNode()
   // reflect to get _attr Symbol
   Object.getOwnPropertySymbols(node.__data).some((symbol) => {
@@ -158,9 +177,15 @@ export function appendChild (node: Node, child: Node) {
   if (child instanceof Scene) {
     node.appendChild(child.container)
     child.parent = node
-    setTimeout(() => {
-      child.updateViewport()
-    })
+    if (child.updateViewport) {
+      setTimeout(() => {
+        child.updateViewport()
+      })
+    } else if (child.resize) {
+      setTimeout(() => {
+        child.resize()
+      })
+    }
   } else if (node instanceof BaseNode) {
     if (child.nodeType === document.TEXT_NODE) {
       if (node instanceof Label) {

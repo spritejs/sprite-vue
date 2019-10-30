@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width">
   <title>Example</title>
   <!-- <script src="/js/sprite-vue.js"></script> -->
+  <script src="http://unpkg.com/spritejs/dist/spritejs.js"></script>
   <script src="/js/sprite-vue-debug.js"></script>
   <style>
   #container {
@@ -29,7 +30,7 @@
       x: Number,
       y: Number
     },
-    template: `<sprite ref="circle" anchor="0.5" :x="x" :y="y" :size="[2*radius, 2*radius]" :bgcolor="color" 
+    template: `<sprite ref="circle" anchor="0.5" :x="x" :y="y" :size="[2*radius, 2*radius]" :bgcolor="color"
   :borderRadius="radius"></sprite>`
   })
 

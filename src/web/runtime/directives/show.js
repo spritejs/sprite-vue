@@ -1,7 +1,9 @@
 /* @flow */
 
+import * as spritejs from 'spritejs'
 import { enter, leave } from '../modules/transition'
-import { BaseSprite } from 'spritejs'
+
+const BaseSprite = spritejs.BaseSprite || spritejs.Node
 
 function getStyle (el) {
   if (el instanceof BaseSprite) {

@@ -50,7 +50,9 @@ export function getTagNamespace (tag: string): ?string {
 
 const unknownElementCache = Object.create(null)
 
-import { isValidNodeType } from 'spritejs'
+import * as spritejs from 'spritejs'
+
+const isValidNodeType = spritejs.isValidNodeType || spritejs.isSpriteNode
 
 export function isUnknownElement (tag: string): boolean {
   /* istanbul ignore if */

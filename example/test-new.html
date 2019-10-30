@@ -4,7 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width">
   <title>Example</title>
-  <script src="http://unpkg.com/spritejs/dist/spritejs.js"></script>
+  <!-- <script src="http://unpkg.com/spritejs/dist/spritejs.js"></script> -->
+  <script src="/js/sprite-next.js"></script>
   <script src="/js/sprite-vue.js"></script>
   <!-- <script src="/js/sprite-vue-debug.js"></script> -->
   <style>
@@ -21,33 +22,14 @@
 const { Vue } = spritevue
 
 Vue.component('my-scene', {
-  states() {
-    return {
-      active: {
-        opacity: 1.0
-      },
-      deactive: {
-        opacity: 0.2
-      }
-    }
-  },
-  actions: [
-    {
-      both: ['active', 'deactive'],
-      action: {
-        duration: 1000,
-        easing: 'ease-in-out'
-      }
-    }
-  ],
   data () {
     return {
       viewport: [600, 600],
       text: 'Hello',
       items: [
-        { id: 'stop-btn', bgcolor: 'red', state: 'deactive' },
-        { id: 'warn-btn', bgcolor: '#fc0', state: 'deactive' },
-        { id: 'pass-btn', bgcolor: 'green', state: 'deactive' }
+        { id: 'stop-btn', bgcolor: 'red'},
+        { id: 'warn-btn', bgcolor: '#fc0'},
+        { id: 'pass-btn', bgcolor: 'green'}
       ]
     }
   },
@@ -57,11 +39,9 @@ Vue.component('my-scene', {
   methods: {
     enter (index) {
       console.log('enter')
-      this.items[index].state = 'active'
     },
     leave (index) {
       console.log('leave')
-      this.items[index].state = 'deactive'
     },
     tap (index, evt) {
       console.log(index, evt)
@@ -71,18 +51,18 @@ Vue.component('my-scene', {
     }
   },
   template: `
-    <scene id="container" :viewport=viewport>
+    <scene id="container" width="600" height="600">
       <layer id="fglayer">
-        <group width="500" display="flex" y="100" justifyContent="space-between" bgcolor="grey">
+        <group width="500" display="flex" y="100" bgcolor="grey">
           <sprite v-if="index < 2" v-for="(item, index) in items" :size="[50, 50]"
+            :pos="[index*100, 0]"
             :key="'sp'+index"
             ref="sp"
             :bgcolor="item.bgcolor"
             v-on:mouseenter="enter(index)"
             v-on:mouseleave="leave(index)"
             v-on:click="tap(index, $event)"
-            :states="states" :actions="actions" :state="item.state"
-            v-on:state-to-active="changed"></sprite>
+          ></sprite>
         </group>
       </layer>
     </scene>

@@ -15,7 +15,10 @@ module.exports = function (env = {}) {
     babelConf.babelrc = false;
   }
 
-  const externals = {}
+  const externals = {
+    spritejs: 'spritejs',
+  };
+
   const output = {
     path: path.resolve(__dirname, 'dist'),
     filename: env.esnext ? 'sprite-vue.es6' : 'sprite-vue',
