@@ -23,7 +23,8 @@ const { Vue } = spritevue
 Vue.component('my-scene', {
   data () {
     return {
-      viewport: [600, 600],
+      width: 1200,
+      height: 1200,
       ccc: {
         bgcolor: 'blue'
       },
@@ -31,7 +32,7 @@ Vue.component('my-scene', {
     }
   },
   mounted () {
-    // console.log(this.$refs)
+    console.log(this.$refs)
     this.ccc.bgcolor = 'red'
     // this.attrs = { ... this.attrs }
     setTimeout(() => {
@@ -42,8 +43,8 @@ Vue.component('my-scene', {
     }, 2000)
   },
   template: `
-    <scene id="container" :viewport=viewport>
-      <layer id="fglayer">
+    <scene id="container" :width=width :height=height ref="bbb">
+      <layer id="fglayer" ref="aaa">
         <sprite :attrs="ccc" :size="[100, 100]" :pos="[200, 200]"></sprite>
         <group>
           <sprite bgcolor="green" :size="[100, 100]" :pos="[400, 200]"></sprite>

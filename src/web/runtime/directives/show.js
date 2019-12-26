@@ -28,7 +28,7 @@ export default {
     const style = getStyle(el)
     if (el instanceof BaseSprite) {
       const states = style.states
-      if (!value && states.hide) {
+      if (!value && states && states.hide) {
         const beforeHide = { __default: true }
         if (states.beforeShow) {
           Object.keys(states.beforeShow).forEach((key) => {
@@ -43,7 +43,7 @@ export default {
       }
       if (!value) {
         style.display = 'none'
-        style.quietSet('state', 'hide')
+        if (style.quietSet) style.quietSet('state', 'hide')
       }
       // if (value) el.show()
     } else {

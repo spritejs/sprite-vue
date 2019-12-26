@@ -40,7 +40,7 @@ export function createElement (tagName: string, vnode: VNode): Element {
     if (tagName === 'scene') {
       const elm = document.createElement('div')
       if (attrs.id) elm.id = attrs.id
-      if (!vnode.data.ref) vnode.data.ref = 'scene'
+      if (!spritejs.isSpriteNode && !vnode.data.ref) vnode.data.ref = 'scene'
       if (!('useDocumentCSS' in attrs)) attrs.useDocumentCSS = true
       let scene
       if (isNewVersion) {

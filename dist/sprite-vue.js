@@ -9791,7 +9791,7 @@ function createElement(tagName, vnode) {
     if (tagName === 'scene') {
       var _elm = document.createElement('div');
       if (attrs.id) _elm.id = attrs.id;
-      if (!vnode.data.ref) vnode.data.ref = 'scene';
+      if (!spritejs__WEBPACK_IMPORTED_MODULE_5__["isSpriteNode"] && !vnode.data.ref) vnode.data.ref = 'scene';
       if (!('useDocumentCSS' in attrs)) attrs.useDocumentCSS = true;
       var scene = void 0;
       if (isNewVersion) {
@@ -13677,7 +13677,7 @@ function locateNode(vnode) {
     var style = getStyle(el);
     if (el instanceof BaseSprite) {
       var states = style.states;
-      if (!value && states.hide) {
+      if (!value && states && states.hide) {
         var beforeHide = { __default: true };
         if (states.beforeShow) {
           babel_runtime_core_js_object_keys__WEBPACK_IMPORTED_MODULE_0___default()(states.beforeShow).forEach(function (key) {
@@ -13692,7 +13692,7 @@ function locateNode(vnode) {
       }
       if (!value) {
         style.display = 'none';
-        style.quietSet('state', 'hide');
+        if (style.quietSet) style.quietSet('state', 'hide');
       }
       // if (value) el.show()
     } else {
